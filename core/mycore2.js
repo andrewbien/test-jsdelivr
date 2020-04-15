@@ -1,1 +1,0 @@
-console.log("HELLO FROM TEST-JSDELIVR CORE 2");
