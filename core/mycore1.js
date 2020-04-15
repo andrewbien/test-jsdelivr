@@ -1,1 +1,1 @@
-console.log("HELLO FROM TEST-JSDELIVR CORE 1");
+console.log("HELLO FROM TEST-JSDELIVR CORE 1 ver2.0");
