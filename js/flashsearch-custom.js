@@ -1627,109 +1627,164 @@ flashsearch.instantSearchTemplates = {
 
   "fs-instant-search": `
 <div
-  v-show="enablePopup"
+  v-show="true"
   class="flashsearch-is-wrapper"
-  :style="{top: position ? position.top + 'px' : undefined, left: position ? position.left + 'px' : undefined, maxHeight: position ? position.maxHeight + 'px' : undefined, width: width + 'px',}"
+  :class="{'flashsearch-is--layout-horizontal': isHorizontalLayout}"
+  :style="{
+    top: position ? position.top + 'px' : undefined, left: position ? position.left + 'px' : undefined, maxHeight: position ? position.maxHeight + 'px' : undefined,
+        '--main-background-color': mainBackgroundColor,
+        '--hover-color': hoverColor,
+        '--label-color': labelColor,
+        '--suggestion-text-color': suggestionTextColor,
+        '--suggestion-highlighted-text-color': suggestionHighlightedTextColor,
+        '--suggestion-highlighted-text-font-weight': suggestionHighlightedTextFontWeight,
+        '--product-title-color': productTitleColor,
+        '--price-color': priceColor,
+        '--discounted-price-color': discountedPriceColor,
+        '--compare-at-price-color': compareAtPriceColor,
+        '--sku-color': skuColor,
+        '--vendor-color': vendorColor,
+        '--view-all-text-color': viewAllTextColor,
+        '--view-all-search-term-color': viewAllSearchTermColor,
+        '--view-all-search-term-font-weight': viewAllSearchTermFontWeight,
+  }"
   @touchmove="() => document.activeElement.blur()"
   data-testid="is-wrapper"
 >
   <div class="flashsearch-is__content-wrapper">
-    <div
-      class="flashsearch-is__suggestions-wrapper"
-      v-if="isSuggestionsNotEmpty"
-    >
-      <div class="flashsearch-is__label">POPULAR SUGGESTIONS</div>
-      <fs-instant-search-item
-        v-for="(suggestion, index) in suggestResults.suggestions"
-        :key="index"
-        :url="'/search?q=' + suggestion"
-        data-testid="is-product-suggestion"
-      >
-        <fs-highlight-text
-          :search-word="suggestResults.query"
-          :text-to-highlight="suggestion"
+    <div class="flashsearch-is-cols">
+      <div class="flashsearch-is-col">
+        <fs-suggestions
+          :isNotEmpty="isSuggestionsNotEmpty"
+          :suggestResults="suggestResults"
         />
-      </fs-instant-search-item>
-    </div>
-    <div
-      class="flashsearch-is__collections-wrapper"
-      v-if="isCollectionsNotEmpty"
-    >
-      <div class="flashsearch-is__label">COLLECTIONS</div>
-      <fs-instant-search-item
-        v-for="(collection, index) in suggestResults.collections"
-        :key="index"
-        :url="'/collections/' + collection.handle"
-        data-testid="is-product-collection"
-      >
-        <fs-highlight-text
-          :search-word="suggestResults.query"
-          :text-to-highlight="collection.title"
+        <fs-collections
+          :isNotEmpty="isCollectionsNotEmpty"
+          :suggestResults="suggestResults"
         />
-      </fs-instant-search-item>
-    </div>
-    <div class="flashsearch-is__pages-wrapper" v-if="isPagesNotEmpty">
-      <div class="flashsearch-is__label">PAGES</div>
-      <fs-instant-search-item
-        v-for="(page, index) in suggestResults.pages"
-        :key="index"
-        :url="'/pages/' + page.handle"
-        data-testid="is-product-page"
-      >
-        <fs-highlight-text
-          :search-word="suggestResults.query"
-          :text-to-highlight="page.title"
+        <fs-pages
+          :isNotEmpty="isPagesNotEmpty"
+          :suggestResults="suggestResults"
         />
-      </fs-instant-search-item>
+      </div>
+      <div class="flashsearch-is-col">
+        <fs-products
+          :isNotEmpty="isProductsNotEmpty"
+          :suggestResults="suggestResults"
+        />
+        <div
+          class="flashsearch-is__view-all-results-wrapper"
+          v-if="showViewAllResults"
+        >
+          <fs-instant-search-item :url="'/search?q=' + suggestResults.query">
+            <div class="flashsearch-is__view-all-results__text-wrapper">
+              <span class="flashsearch-is__view-all-results__text"
+                >View all results for
+              </span>
+              <span class="flashsearch-is__view-all-results__query"
+                >{{suggestResults.query}}</span
+              >
+            </div>
+          </fs-instant-search-item>
+        </div>
+      </div>
     </div>
-    <div
-      class="flashsearch-is__did-you-mean-wrapper"
-      v-if="suggestResults.didYouMean"
-    >
-      Sorry, nothing found for
-      <span class="flashsearch-is__did-you-mean-query"
-        >{{suggestResults.query}}</span
-      >.&nbsp; Did you mean:
-      <span
-        class="flashsearch-is__did-you-mean-text"
-        @click="chooseDidYouMean"
-        @mousedow.prevent=""
-        data-testid="is-did-you-mean"
-        >{{suggestResults.didYouMean}}</span
-      >
-    </div>
-    <div class="flashsearch-is__product-wrapper">
-      <div class="flashsearch-is__label">PRODUCTS</div>
-      <fs-instant-search-product-item
-        v-for="(product, index) in suggestResults.products"
-        :key="index"
-        :product="product"
-      />
-    </div>
-    <div class="flashsearch-is__empty-page-wrapper" v-if="showEmptyPage">
+    <div class="flashsearch-is__empty-page-wrapper" v-show="showEmptyPage">
       Sorry, nothing found for
       <span class="flashsearch-is__empty-page__query"
         >{{suggestResults.query}}</span
       >
     </div>
-    <div
-      class="flashsearch-is__view-all-results-wrapper"
-      v-if="showViewAllResults"
-    >
-      <fs-instant-search-item :url="'/search?q=' + suggestResults.query">
-        <div class="flashsearch-is__view-all-results__text-wrapper">
-          <span class="flashsearch-is__view-all-results__text"
-            >View all results for
-          </span>
-          <span class="flashsearch-is__view-all-results__query"
-            >{{suggestResults.query}}</span
-          >
-        </div>
-      </fs-instant-search-item>
-    </div>
   </div>
 </div>
     `,
+
+  "fs-suggestions": `
+<div
+  class="flashsearch-is__suggestions-wrapper"
+  v-if="isNotEmpty"
+>
+  <div class="flashsearch-is__label">POPULAR SUGGESTIONS</div>
+  <fs-instant-search-item
+    class="flashsearch-is__item--type-suggestion"
+    v-for="(suggestion, index) in suggestResults.suggestions"
+    :key="index"
+    :url="'/search?q=' + suggestion"
+    data-testid="is-product-suggestion"
+  >
+    <fs-highlight-text
+      :search-word="suggestResults.query"
+      :text-to-highlight="suggestion"
+    />
+  </fs-instant-search-item>
+</div>
+  `,
+
+  "fs-collections": `
+<div
+  class="flashsearch-is__collections-wrapper"
+  v-if="isNotEmpty"
+>
+  <div class="flashsearch-is__label">COLLECTIONS</div>
+  <fs-instant-search-item
+    class="flashsearch-is__item--type-suggestion"
+    v-for="(collection, index) in suggestResults.collections"
+    :key="index"
+    :url="'/collections/' + collection.handle"
+    data-testid="is-product-collection"
+  >
+    <fs-highlight-text
+      :search-word="suggestResults.query"
+      :text-to-highlight="collection.title"
+    />
+  </fs-instant-search-item>
+</div>
+  `,
+
+  "fs-pages": `
+<div class="flashsearch-is__pages-wrapper" v-if="isNotEmpty">
+  <div class="flashsearch-is__label">PAGES</div>
+  <fs-instant-search-item
+    class="flashsearch-is__item--type-suggestion"
+    v-for="(page, index) in suggestResults.pages"
+    :key="index"
+    :url="'/pages/' + page.handle"
+    data-testid="is-product-page"
+  >
+    <fs-highlight-text
+      :search-word="suggestResults.query"
+      :text-to-highlight="page.title"
+    />
+  </fs-instant-search-item>
+</div>
+  `,
+
+  "fs-products": `
+<div
+  class="flashsearch-is__did-you-mean-wrapper"
+  v-if="suggestResults.didYouMean"
+>
+  Sorry, nothing found for
+  <span class="flashsearch-is__did-you-mean-query"
+  >{{suggestResults.query}}</span>.&nbsp; Did you mean:
+  <span
+    class="flashsearch-is__did-you-mean-text"
+    @mousedown.prevent=""
+    @click.stop.prevent="chooseDidYouMean"
+    data-testid="is-did-you-mean"
+  >{{suggestResults.didYouMean}}</span>
+</div>
+<div class="flashsearch-is__product-wrapper" v-if="isNotEmpty">
+  <div class="flashsearch-is__label">PRODUCTS</div>
+  <div class="flashsearch-is__product-item-wrapper">
+    <fs-instant-search-product-item
+      v-for="(product, index) in suggestResults.products"
+      :key="index"
+      :product="product"
+    />
+  </div>
+</div>
+  `,
 
   "fs-instant-search-desktop": `
 <fs-instant-search
