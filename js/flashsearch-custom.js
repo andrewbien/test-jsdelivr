@@ -1,51 +1,53 @@
 flashsearch.commonTemplates = {
   "fs-price": `
-<div class="flashsearch-price">
-  <span v-if="onSale">
+<div v-if="enablePrice" class="flashsearch-price" :data-testid="buildDataTestId('price')">
+  <span v-if="onSale && enableCompareAtPrice">
     <span
       class="flashsearch-price--type-sale"
-      v-html="utils.formatDisplayMoney(compareAtPrice)"
+      v-html="fsUtils.formatDisplayMoney(compareAtPrice)"
+      :data-testid="buildDataTestId('ca-price')"
     />
     <span
       class="flashsearch-price--type-origin"
-      v-html="utils.formatDisplayMoney(price)"
+      v-html="fsUtils.formatDisplayMoney(price)"
     />
   </span>
   <span
     v-else
     class="flashsearch-price--type-regular"
-    v-html="utils.formatDisplayMoney(price)"
+    v-html="fsUtils.formatDisplayMoney(price)"
   />
 </div>
     `,
 
   "fs-price-range": `
-<p class="flashsearch-price">
+<p v-if="enablePrice" class="flashsearch-price" :data-testid="buildDataTestId('price')">
   <span v-if="priceVaries" class="flashsearch-price--type-regular">
     <span
       class="flashsearch-price-min"
-      v-html="utils.formatDisplayMoney(priceMin)"
+      v-html="fsUtils.formatDisplayMoney(priceMin)"
     />
     <span class="flashsearch-price__split">-</span>
     <span
       class="flashsearch-price-max"
-      v-html="utils.formatDisplayMoney(priceMax)"
+      v-html="fsUtils.formatDisplayMoney(priceMax)"
     />
   </span>
-  <span v-else-if="onSale">
+  <span v-else-if="onSale && enableCompareAtPrice">
     <span
       class="flashsearch-price--type-sale"
-      v-html="utils.formatDisplayMoney(compareAtPriceMin)"
+      v-html="fsUtils.formatDisplayMoney(compareAtPriceMin)"
+      :data-testid="buildDataTestId('ca-price')"
     />
     <span
       class="flashsearch-price--type-origin"
-      v-html="utils.formatDisplayMoney(priceMin)"
+      v-html="fsUtils.formatDisplayMoney(priceMin)"
     />
   </span>
   <span
     v-else
     class="flashsearch-price--type-regular"
-    v-html="utils.formatDisplayMoney(priceMin)"
+    v-html="fsUtils.formatDisplayMoney(priceMin)"
   />
 </p>
     `,
@@ -63,28 +65,29 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-main": `
-<div class="flashsearch-container">
+<div id="flashsearch-main-container" class="flashsearch-container" :style="srStyles">
   <fs-layout>
     <fs-layout-header>
       <div
         v-if="isCollPage"
         class="flashsearch-collection-header"
-        data-testid="collection-header"
+        data-testid="sr-collection-header"
       >
-        {{collHeader}}
+        {{collHeader ? collHeader : $t("searchResults.collectionPageHeader.products")}}
       </div>
       <div v-if="isSearchPage" class="flashsearch-search-wrapper">
-        <div v-if="isGetProdLoading" class="flashsearch-search-wrapper">
+        <div v-if="isGetProdLoading && enableSearchPageHeader" class="flashsearch-search-wrapper">
           <h1 class="flashsearch-search-result-header">
             <fs-skeleton class="flashsearch-search-result-header__skeleton" />
           </h1>
         </div>
-        <h1 v-else class="flashsearch-search-result-header">
-          {{totalProducts}} results for <b>"{{query}}"</b>
+        <h1 v-else-if="enableSearchPageHeader" class="flashsearch-search-result-header" data-testid="sr-search-page-header">
+          {{$t("searchResults.searchPageHeader.pageHeader", {count: totalProducts, searchTerm: query})}}
         </h1>
         <fs-input-search
+          v-if="enableSearchBox"
           class="flashsearch-search-box"
-          placeholder="Search"
+          :placeholder="$t('searchResults.searchPageHeader.searchBoxPlaceholder')"
           @search="onSearch"
           v-model:value="sbQuery"
           @change="onChangeQuery"
@@ -167,35 +170,30 @@ flashsearch.searchResultsTemplates = {
             class="flashsearch-sr-empty"
             data-testid="sr-empty"
           >
-            <p>Try checking your spelling or using different words.</p>
-          </div>
-          <div
-            v-if="noMatchingFound && isCollPage"
-            class="flashsearch-sr-empty"
-            data-testid="sr-empty"
-          >
-            <p>No result found.</p>
+            <p v-if="noMatchingFound && isSearchPage" data-testid="sr-search-empty-page-text">{{$t("searchResults.emptyPage.searchEmptyPageText")}}</p>
+            <p v-if="noMatchingFound && isCollPage" data-testid="sr-collections-empty-page-text">{{$t("searchResults.emptyPage.collectionsEmptyPageText")}}</p>
           </div>
         </div>
         <div class="flashsearch-sr-wrapper">
           <fs-search-results-items
             :search-result="searchResult"
             :view-type="viewType"
-            :is-loading="isFetchProdFetching"
+            :is-loading="isGetProdFetching"
           />
-          <div class="flashsearch-sr-paging">
-            <fs-pagination
-              :default-current="1"
-              :default-page-size="12"
-              :total="totalProducts"
-              :current="page"
-              @change="onChangePage"
-            />
-          </div>
+          <fs-custom-pagination
+            :total="totalProducts"
+            :current-num-of-products="currentNumOfProducts"
+            :current="page"
+            @change="onChangePage"
+            @load-more="onLoadMore"
+            :has-next-page="hasNextPage"
+            :is-load-more-fetching="isLoadMoreProdFetching"
+          />
         </div>
         <fs-quick-view-item
           v-if="shouldShowQuickView"
           :product="currentQvProduct"
+          :get-container="() => document.getElementById('flashsearch-main-container')"
         />
       </fs-layout-content>
     </fs-layout>
@@ -236,7 +234,7 @@ flashsearch.searchResultsTemplates = {
   >
     <template #title>
       <span class="flashsearch-filters-title-wrapper">
-        <span class="flashsearch-filters-title">Filters</span>
+        <span class="flashsearch-filters-title">{{$t("searchResults.filter.filtersTitle")}}</span>
         <fs-button-clear-all type="text" />
       </span>
     </template>
@@ -248,8 +246,7 @@ flashsearch.searchResultsTemplates = {
         size="large"
         @click.prevent="showResults"
       >
-        {{"Show results" + (searchResult && searchResult.total > 0 ? " (" +
-        searchResult.total + ")" : "")}}
+        {{ $t("searchResults.filter.showResults", {count: (searchResult && searchResult.total > 0 ? searchResult.total  : 0)}) }}
       </fs-button>
     </div>
   </fs-drawer>
@@ -522,11 +519,7 @@ flashsearch.searchResultsTemplates = {
               <span class="flashsearch-option__value" data-testid="option-value"
                 >{{item.label}}</span
               >
-              <span
-                class="flashsearch-option__amount"
-                data-testid="option-amount"
-                >{{"(" + item.count + ")"}}</span
-              >
+              <fs-filter-option-amount :count="item.count"/>
             </span>
           </template>
           <fs-filter-sub-collection
@@ -553,9 +546,7 @@ flashsearch.searchResultsTemplates = {
           <span class="flashsearch-option__value" data-testid="option-value">
             {{item.label}}
           </span>
-          <span class="flashsearch-option__amount" data-testid="option-amount"
-            >({{item.count}})</span
-          >
+          <fs-filter-option-amount :count="item.count"/>
         </a>
       </template>
     </div>
@@ -656,12 +647,7 @@ flashsearch.searchResultsTemplates = {
             <span class="flashsearch-option__value" data-testid="option-value">
               {{label}}
             </span>
-            <span
-              class="flashsearch-option__amount"
-              data-testid="option-amount"
-            >
-              ({{count}})
-            </span>
+            <fs-filter-option-amount :count="count"/>
           </span>
         </fs-checkbox>
       </fs-col>
@@ -680,9 +666,7 @@ flashsearch.searchResultsTemplates = {
         <span class="flashsearch-option__value" data-testid="option-value"
           >{{label}}</span
         >
-        <span class="flashsearch-option__amount" data-testid="option-amount"
-          >({{count}})</span
-        >
+        <fs-filter-option-amount :count="count"/>
       </a>
     </template>
   </div>
@@ -841,9 +825,7 @@ flashsearch.searchResultsTemplates = {
         >& Up</span
       >
     </span>
-    <span class="flashsearch-option__amount" data-testid="option-amount"
-      >({{getCount(value)}})</span
-    >
+    <fs-filter-option-amount :count="getCount(value)"/>
   </a>
 </div>
     `,
@@ -870,12 +852,7 @@ flashsearch.searchResultsTemplates = {
             <span class="flashsearch-option__value" data-testid="option-value">
               {{label}}
             </span>
-            <span
-              class="flashsearch-option__amount"
-              data-testid="option-amount"
-            >
-              ({{count}})
-            </span>
+            <fs-filter-option-amount :count="count"/>
           </span>
         </fs-checkbox>
       </fs-col>
@@ -946,17 +923,25 @@ flashsearch.searchResultsTemplates = {
       >
     </span>
     <span class="flashsearch-option--right">
-      <span class="flashsearch-option__amount" data-testid="option-amount"
-        >({{count}})</span
-      >
+      <fs-filter-option-amount :count="count"/>
     </span>
   </a>
 </fs-tooltip>
     `,
+
+  "fs-filter-option-amount": `
+<span
+  v-if="enable"
+  class="flashsearch-option__amount"
+  data-testid="option-amount"
+>
+  ({{count}})
+</span>
+  `,
   // End filter types
 
   "fs-filters-icon": `
-<div v-if="isLoading" class="flashsearch-filters-icon-wrapper">
+<div v-if="enable && isLoading" class="flashsearch-filters-icon-wrapper">
   <div v-if="isHorizontalLayout" class="flashsearch-filters-icon">
     <fs-skeleton class="flashsearch-filters-icon__skeleton" />
   </div>
@@ -964,12 +949,12 @@ flashsearch.searchResultsTemplates = {
     <fs-skeleton class="flashsearch-filters-icon--mobile__skeleton" />
   </div>
 </div>
-<div v-else class="flashsearch-filters-icon-wrapper">
+<div v-else-if="enable" class="flashsearch-filters-icon-wrapper">
   <div
     v-if="isHorizontalLayout"
     class="flashsearch-filters-icon"
     :class="{'flashsearch-filters-icon--opened': opened}"
-    data-testid="filters-collapse"
+    data-testid="sr-filter-icon"
     @click="collapseFilters"
   >
     <div class="flashsearch-filters-icon__inner" :class="{'opened': opened}">
@@ -980,11 +965,11 @@ flashsearch.searchResultsTemplates = {
         <fs-close-outlined />
       </span>
     </div>
-    <span class="flashsearch-filters-icon__label">Filters</span>
+    <span class="flashsearch-filters-icon__label" data-testid="sr-filter-label">{{$t("searchResults.toolbars.filters")}}</span>
   </div>
   <div
     class="flashsearch-filters-icon flashsearch-filters-icon--mobile"
-    data-testid="filters-toggle"
+    data-testid="sr-filter-icon-mobile"
     @click="clickMobileFilters"
   >
     <div class="flashsearch-filters-icon__inner">
@@ -992,7 +977,7 @@ flashsearch.searchResultsTemplates = {
         <fs-sliders-outlined />
       </span>
     </div>
-    <span class="flashsearch-filters-icon__label">Filters</span>
+    <span class="flashsearch-filters-icon__label" data-testid="sr-filter-label-mobile">{{$t("searchResults.toolbars.filters")}}</span>
   </div>
 </div>
     `,
@@ -1004,7 +989,7 @@ flashsearch.searchResultsTemplates = {
   @click.stop.prevent="clear"
   data-testid="filter-clear"
 >
-  Clear
+  {{$t("searchResults.filter.clear")}}
 </fs-button>
     `,
 
@@ -1017,7 +1002,7 @@ flashsearch.searchResultsTemplates = {
   class="flashsearch-filter-by__clear-all"
   :class="{'flashsearch-filter-by__clear-all--text': type === 'text'}"
 >
-  Clear all
+  {{$t("searchResults.filter.clearAll")}}
 </fs-button>
     `,
 
@@ -1028,7 +1013,7 @@ flashsearch.searchResultsTemplates = {
   @click.prevent="viewMore"
   data-testid="filter-view-more"
 >
-  {{onViewMoreStatus ? "View less" : "View more"}}
+  {{onViewMoreStatus ? $t("searchResults.filter.viewLess") : $t("searchResults.filter.viewMore")}}
 </fs-button>
     `,
   // End filters
@@ -1063,24 +1048,31 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-total-products": `
-<div>
+<div v-if="enable">
   <div v-if="isLoading" class="flashsearch-filters-total-products">
     <fs-skeleton class="flashsearch-filters-total-products__skeleton" />
   </div>
   <div v-else class="flashsearch-filters-total-products">
-    <span
-      class="flashsearch-filters-total-products__total"
-      data-testid="total-products"
-      >{{total}}</span
-    >&nbsp;<span class="flashsearch-filters-total-products__unit"
-      >products</span
+    <i18n-t
+      keypath="searchResults.toolbars.totalProducts"
+      tag="span"
+      data-testid="sr-total-products-wrapper"
     >
+      <template #count>
+        <span
+          class="flashsearch-filters-total-products__total"
+          data-testid="sr-total-products"
+        >
+          {{total}}
+        </span>
+      </template>
+    </i18n-t>
   </div>
 </div>
     `,
 
   "fs-search-results-sort-by": `
-<div>
+<div v-if="enable">
   <div v-if="isLoading" class="flashsearch-sort-by">
     <div class="flashsearch-sort-by__content">
       <fs-skeleton class="flashsearch-sort-by__content__skeleton" />
@@ -1089,19 +1081,20 @@ flashsearch.searchResultsTemplates = {
       <fs-skeleton class="flashsearch-sort-by__mobile-content__skeleton" />
     </div>
   </div>
-  <div v-else class="flashsearch-sort-by">
-    <div class="flashsearch-sort-by__content">
+  <div v-else id="flashsearch-sr-toolbars-sort-by" class="flashsearch-sort-by" data-testid="sr-sort-by">
+    <div class="flashsearch-sort-by__content" data-testid="sr-sort-by-select">
       <fs-select
         size="large"
         v-model:value="sortBy"
         @change="changeSortByDesktop"
-        data-testid="sort-by-select"
+        :get-popup-container="() => document.getElementById('flashsearch-sr-toolbars-sort-by')"
       >
         <fs-select-option
           v-for="({value, label}, index) in sortByList"
           :key="index"
           :value="value"
-          data-testid="sort-by-option"
+          data-testid="sr-sort-by-option"
+          class="flashsearch-sort-by__option"
         >
           {{label}}
         </fs-select-option>
@@ -1112,9 +1105,9 @@ flashsearch.searchResultsTemplates = {
         type="link"
         class="flashsearch-sort-by__button"
         @click.prevent="openSortBy"
-        data-testid="sort-by-select-mobile"
+        data-testid="sr-sort-by-select-mobile"
       >
-        Sort by
+        {{$t("searchResults.toolbars.sortBy.sortBy")}}
         <fs-down-outlined
           :style="{'font-size': '10px'}"
           :rotate="shouldOpenSortBy ? 180 : undefined"
@@ -1126,22 +1119,23 @@ flashsearch.searchResultsTemplates = {
         @close="closeSortBy"
         :visible="shouldOpenSortBy"
         height="auto"
+        :get-container="() => document.getElementById('flashsearch-sr-toolbars-sort-by')"
       >
         <template v-slot:title>
-          <span class="flashsearch-sort-by__title">Sort by</span>
+          <span class="flashsearch-sort-by__title" data-testid="sr-sort-by-title">Sort by</span>
         </template>
         <div class="flashsearch-sort-by__mobile-content-inner">
-          <a
+          <span
             v-for="({value, label}, index) in sortByList"
             :key="index"
             class="flashsearch-sort-by__item"
             :class="{'flashsearch-sort-by__item--selected': sortBy === value}"
             @click.prevent="changeSortByMobile(value)"
-            data-testid="sort-by-option"
+            data-testid="sr-sort-by-option"
             :aria-selected="sortBy === value ? 'true' : 'false'"
           >
             {{label}}
-          </a>
+          </span>
         </div>
       </fs-drawer>
     </div>
@@ -1151,25 +1145,26 @@ flashsearch.searchResultsTemplates = {
 
   "fs-product-buttons": `
 <div class="flashsearch-product__button-wrapper">
-  <a class="flashsearch-product__button" rel="nofollow" @click="showQuickView">
-    <span class="flashsearch-product__button__text--status-hidden"
-      >Quick view</span
-    >
+  <a
+    v-if="enableQuickView"
+    class="flashsearch-product__button flashsearch-product__button--type-quick-view"
+    rel="nofollow"
+    @click="showQuickView"
+    data-testid="sr-quick-view-btn"
+  >
     <fs-eye-outlined class="flashsearch-product__button__icon" />
-    <span class="flashsearch-product__button__text">Quick view</span>
+    <span class="flashsearch-product__button__text" data-testid="sr-quick-view-text">{{$t("searchResults.productItem.quickView")}}</span>
   </a>
-  <span v-if="product.availableForSale">
+  <span v-if="product.availableForSale && enableAddToCart">
     <a
       v-if="product.variants.length > 1"
-      class="flashsearch-product__button"
+      class="flashsearch-product__button flashsearch-product__button--type-atc"
       :href="product.url"
       rel="nofollow"
+      data-testid="sr-atc-btn"
     >
-      <span class="flashsearch-product__button__text--status-hidden"
-        >Select options</span
-      >
       <fs-shopping-cart-outlined class="flashsearch-product__button__icon" />
-      <span class="flashsearch-product__button__text">Select options</span>
+      <span class="flashsearch-product__button__text" data-testid="sr-atc-text">{{$t("searchResults.productItem.selectOptions")}}</span>
     </a>
     <form
       v-else
@@ -1177,31 +1172,27 @@ flashsearch.searchResultsTemplates = {
       action="/cart/add"
       acceptCharset="UTF-8"
       enctype="multipart/form-data"
-      class="flashsearch-product__button"
+      class="flashsearch-product__button flashsearch-product__button--type-atc"
       :id="'flashsearch-product-form-' + currentVariant.id"
       @click="() => document.getElementById('flashsearch-product-form-' + currentVariant.id).submit()"
+      data-testid="sr-atc-btn"
     >
-      <span class="flashsearch-product__button__text--status-hidden"
-        >Add to cart</span
-      >
       <fs-shopping-cart-outlined class="flashsearch-product__button__icon" />
       <input type="hidden" name="form_type" value="product" />
       <input type="hidden" name="quantity" value="1" min="1" />
       <input type="hidden" name="id" :value="currentVariant.id" />
-      <span class="flashsearch-product__button__text">Add to cart</span>
+      <span class="flashsearch-product__button__text" data-testid="sr-atc-text">{{$t("searchResults.productItem.addToCart")}}</span>
     </form>
   </span>
   <a
-    v-else
-    class="flashsearch-product__button"
+    v-else-if="enableAddToCart"
+    class="flashsearch-product__button flashsearch-product__button--type-atc"
     :href="product.url"
     rel="nofollow"
+    data-testid="sr-atc-btn"
   >
-    <span class="flashsearch-product__button__text--status-hidden"
-      >Read more</span
-    >
     <fs-info-circle-outlined class="flashsearch-product__button__icon" />
-    <span class="flashsearch-product__button__text">Read more</span>
+    <span class="flashsearch-product__button__text" data-testid="sr-atc-text">{{$t("searchResults.productItem.readMore")}}</span>
   </a>
 </div>
     `,
@@ -1227,19 +1218,37 @@ flashsearch.searchResultsTemplates = {
   "fs-product-label": `
 <span class="flashsearch-label-wrapper">
   <span
-    v-if="!availableForSale"
+    v-if="!availableForSale && enableSoldOutLabel"
     class="flashsearch-label flashsearch-label--type-soldout"
+    :data-testid="soldOutDataTestid"
   >
-    Sold out
+    {{$t("searchResults.productItem.soldOut")}}
   </span>
   <span
-    v-else-if="onSale"
+    v-else-if="onSale && enableSaleLabel"
     class="flashsearch-label flashsearch-label--type-onsale"
+    :data-testid="saleDataTestid"
   >
-    Sale
+    {{$t("searchResults.productItem.sale")}}
   </span>
 </span>
     `,
+
+  "fs-product-title": `
+<h3 class="flashsearch-product-title">
+  <a :href="url" v-html="title" data-testid="sr-product-title" />
+</h3>
+  `,
+
+  "fs-product-vendor": `
+<div v-if="enable" class="flashsearch-product-vendor">
+  <a
+    :href="'/collections/vendors?q=' + vendor"
+    v-html="vendor"
+    data-testid="sr-product-vendor"
+  />
+</div>
+  `,
 
   "fs-quick-view-item": `
 <fs-modal
@@ -1257,6 +1266,14 @@ flashsearch.searchResultsTemplates = {
       :xs="24"
       class="flashsearch-quickview-thumbs"
     >
+      <fs-product-label
+        :available-for-sale="product.availableForSale"
+        :on-sale="onSale"
+        :enable-sold-out-label="enableSoldOutLabel"
+        :enable-sale-label="enableSaleLabel"
+        sold-out-data-testid="sr-qv-product-label-sold-out"
+        sale-data-testid="sr-qv-product-label-sale"
+      />
       <fs-carousel arrows dot-position="top" :ref="el => caroRef = el">
         <template #prevArrow>
           <div
@@ -1275,7 +1292,7 @@ flashsearch.searchResultsTemplates = {
           <div class="flashsearch-quickview-thumbs-item-wrapper">
             <span
               class="flashsearch-quickview-thumbs-item"
-              :style="{'padding-top': '127.586%', 'background-image': 'url(' + utils.getSizedImageUrl(image.originalSrc, '540x') + ')', 'background-repeat': 'no-repeat'}"
+              :style="{'padding-top': '127.586%', 'background-image': 'url(' + fsUtils.getSizedImageUrl(image.originalSrc, '540x') + ')', 'background-repeat': 'no-repeat'}"
             />
           </div>
         </div>
@@ -1292,7 +1309,7 @@ flashsearch.searchResultsTemplates = {
       <div
         class="flashsearch-quickview-product-details flashsearch-scroll-content"
       >
-        <h1 class="flashsearch-quickview__title">
+        <h1 data-testid="sr-qv-product-title" class="flashsearch-quickview__title">
           <a :href="product.url">{{product.title}}</a>
         </h1>
         <fs-price
@@ -1300,9 +1317,12 @@ flashsearch.searchResultsTemplates = {
           :on-sale="onSale"
           :price="currentVariant.price"
           :compare-at-price="currentVariant.compareAtPrice"
+          :enable-price="enablePrice"
+          :enable-compare-at-price="enableCompareAtPrice"
+          data-testid-prefix="sr-qv"
         />
-        <p class="flashsearch-quickview__vendor">{{product.vendor}}</p>
-        <p class="flashsearch-quickview__description flashsearch-ellipsis-text">
+        <p v-if="enableVendor" class="flashsearch-quickview__vendor" data-testid="sr-qv-product-vendor">{{product.vendor}}</p>
+        <p v-if="enableDescription" class="flashsearch-quickview__description flashsearch-ellipsis-text" data-testid="sr-qv-product-description">
           {{product.description}}
         </p>
         <fs-form
@@ -1319,11 +1339,13 @@ flashsearch.searchResultsTemplates = {
             :name="option.name"
             :label="option.name"
           >
-            <fs-select size="large" v-model:value="formState[option.name]">
+            <fs-select size="large" v-model:value="formState[option.name]" :get-popup-container="() => document.getElementById('flashsearch-main-container')" data-testid="sr-qv-options-select">
               <fs-select-option
                 v-for="(value, index) in option.values"
                 :key="index"
                 :value="value"
+                class="flashsearch-quickview__option"
+                data-testid="sr-qv-options-select-option"
               >
                 {{value}}
               </fs-select-option>
@@ -1331,11 +1353,12 @@ flashsearch.searchResultsTemplates = {
           </fs-form-item>
           <fs-row>
             <fs-col :xl="8" :lg="8" :md="8" :sm="8" :xs="8">
-              <fs-form-item name="quantity" label="Quantity">
+              <fs-form-item name="quantity" :label="$t('searchResults.quickView.quantity')">
                 <fs-input-number
                   size="large"
                   :min="1"
                   v-model:value="formState.quantity"
+                  class="flashsearch-quickview__quantity"
                 />
               </fs-form-item>
             </fs-col>
@@ -1344,33 +1367,35 @@ flashsearch.searchResultsTemplates = {
                 <fs-button
                   v-if="isCurrentVariantAvailable"
                   class="flashsearch-quickview__add-to-cart-btn"
-                  type="primary"
                   html-type="submit"
                   size="large"
                   :loading="qvSubmitLoading"
+                  data-testid="sr-qv-atc-btn"
                 >
-                  Add to cart
+                  {{$t("searchResults.quickView.addToCart")}}
                 </fs-button>
                 <fs-button
                   v-else
                   size="large"
                   class="flashsearch-quickview__add-to-cart-btn"
                   :disabled="true"
+                  data-testid="sr-qv-disabled-btn"
                 >
-                  Unavailable
+                  {{$t("searchResults.quickView.unavailable")}}
                 </fs-button>
               </fs-form-item>
             </fs-col>
           </fs-row>
         </fs-form>
-        <button
+        <fs-button
           v-else
           size="large"
           class="flashsearch-quickview__add-to-cart-btn"
           :disabled="true"
+          data-testid="sr-qv-disabled-btn"
         >
-          Out of stock
-        </button>
+          {{$t("searchResults.quickView.soldOut")}}
+        </fs-button>
       </div>
     </fs-col>
   </fs-row>
@@ -1385,12 +1410,15 @@ flashsearch.searchResultsTemplates = {
   :md="isHorizontalLayout ? 6 : 8"
   :sm="12"
   :xs="12"
+  data-testid="grid-view-item"
 >
   <div class="flashsearch-product">
     <div class="flashsearch-product-image-container">
       <fs-product-label
         :available-for-sale="product.availableForSale"
         :on-sale="onSale"
+        :enable-sold-out-label="enableSoldOutLabel"
+        :enable-sale-label="enableSaleLabel"
       />
       <fs-product-image
         :product-url="product.url"
@@ -1403,19 +1431,8 @@ flashsearch.searchResultsTemplates = {
       />
     </div>
     <div class="flashsearch-product__info">
-      <h3 class="flashsearch-product__info__title">
-        <a
-          :href="product.url"
-          v-html="product.title"
-          data-testid="product-title"
-        />
-      </h3>
-      <div class="flashsearch-product__info__vendor">
-        <a
-          :href="'/collections/vendors?q=' + product.vendor"
-          v-html="product.vendor"
-        />
-      </div>
+      <fs-product-title :url="product.url" :title="product.title" class="flashsearch-product__info__title"/>
+      <fs-product-vendor :vendor="product.vendor" class="flashsearch-product__info__vendor"/>
       <fs-price-range
         class="flashsearch-product__price"
         :price-varies="priceVaries"
@@ -1423,6 +1440,9 @@ flashsearch.searchResultsTemplates = {
         :price-min="product.priceMin"
         :price-max="product.priceMax"
         :compare-at-price-min="product.compareAtPriceMin"
+        :enable-price="enablePrice"
+        :enable-compare-at-price="enableCompareAtPrice"
+        data-testid-prefix="sr"
       />
     </div>
   </div>
@@ -1437,6 +1457,7 @@ flashsearch.searchResultsTemplates = {
   :sm="24"
   :xs="24"
   class="flashsearch-product-wrapper"
+  data-testid="list-view-item"
 >
   <fs-row class="flashsearch-product flashsearch-product-list">
     <fs-col :xl="6" :lg="6" :md="6" :sm="24" :xs="24">
@@ -1444,6 +1465,8 @@ flashsearch.searchResultsTemplates = {
         <fs-product-label
           :available-for-sale="product.availableForSale"
           :on-sale="onSale"
+          :enable-sold-out-label="enableSoldOutLabel"
+          :enable-sale-label="enableSaleLabel"
         />
         <fs-product-image
           :product-url="product.url"
@@ -1464,15 +1487,8 @@ flashsearch.searchResultsTemplates = {
       :xs="24"
       class="flashsearch-product-list__info-left"
     >
-      <h3 class="flashsearch-product-list__info__title">
-        <a :href="product.url" v-html="product.title" />
-      </h3>
-      <div class="flashsearch-product-list__info__vendor">
-        <a
-          :href="'/collections/vendors?q=' + product.vendor"
-          v-html="product.vendor"
-        />
-      </div>
+      <fs-product-title :url="product.url" :title="product.title" class="flashsearch-product-list__info__title"/>
+      <fs-product-vendor :vendor="product.vendor" class="flashsearch-product-list__vendor"/>
       <div
         class="flashsearch-product-list__info__description flashsearch-ellipsis-text"
         v-html="product.description"
@@ -1586,29 +1602,78 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-search-results-views": `
-<div>
+<div v-if="enable">
   <div v-if="isLoading" class="flashsearch-filters-toolbar__views">
     <fs-skeleton class="flashsearch-filters-toolbar__view__skeleton" />
   </div>
   <div v-else class="flashsearch-filters-toolbar__views">
     <a
+      v-if="enableGridView"
       :href="null"
       @click="chooseGridView"
       class="flashsearch-filters-toolbar__view flashsearch-filters-toolbar__view--type-grid"
       :class="{'flashsearch-filters-toolbar__view--status-active': viewType === 'grid'}"
+      data-testid="sr-grid-view-icon"
     >
       <fs-app-store-outlined />
     </a>
     <a
+      v-if="enableListView"
       @click="chooseListView"
       class="flashsearch-filters-toolbar__view flashsearch-filters-toolbar__view--type-list"
       :class="{'flashsearch-filters-toolbar__view--status-active': viewType === 'list'}"
+      data-testid="sr-list-view-icon"
     >
       <fs-bars-outlined />
     </a>
   </div>
 </div>
     `,
+
+  "fs-custom-pagination": `
+<div class="flashsearch-sr-paging">
+  <fs-pagination
+    v-if="isPagination"
+    :default-current="1"
+    :default-page-size="productsPerPage"
+    :total="total"
+    :current="current"
+    @change="change"
+    data-testid="sr-pa-pagination"
+  />
+  <div v-else-if="isLoadMore && hasNextPage" class="flashsearch-load-more-paging" data-testid="sr-pa-load-more">
+    <fs-spin
+      v-if="isLoadMoreFetching"
+      size="large"
+      :indicator="indicator"
+      data-testid="sr-pa-load-more-loading-icon"
+    />
+    <div v-else>
+      <div
+        class="flashsearch-load-more-paging__title"
+        data-testid="sr-pa-load-more-title"
+      >
+        {{$t("searchResults.pagination.loadMoreTotal", {current: currentNumOfProducts, total: total})}}
+      </div>
+      <fs-button
+        class="flashsearch-load-more-paging__button"
+        @click="loadMore"
+        data-testid="sr-pa-load-more-btn"
+      >
+        {{$t("searchResults.pagination.loadMore")}}
+      </fs-button>
+    </div>
+  </div>
+  <div
+    v-else-if="isInfiniteLoading && hasNextPage"
+    :ref="ref => infiniteLoadingRef = ref"
+    class="flashsearch-load-more-paging"
+    data-testid="sr-pa-infinite-loading"
+  >
+    <fs-spin v-if="isLoadMoreFetching" size="large" :indicator="indicator" />
+  </div>
+  </div>
+  `,
 };
 
 flashsearch.instantSearchTemplates = {
@@ -1627,73 +1692,96 @@ flashsearch.instantSearchTemplates = {
 
   "fs-instant-search": `
 <div
-  v-show="true"
+  :ref="ref => isWrapperRef = ref"
+  v-show="enablePopup"
   class="flashsearch-is-wrapper"
-  :class="{'flashsearch-is--layout-horizontal': isHorizontalLayout}"
-  :style="{
-    top: position ? position.top + 'px' : undefined, left: position ? position.left + 'px' : undefined, maxHeight: position ? position.maxHeight + 'px' : undefined,
-        '--main-background-color': mainBackgroundColor,
-        '--hover-color': hoverColor,
-        '--label-color': labelColor,
-        '--suggestion-text-color': suggestionTextColor,
-        '--suggestion-highlighted-text-color': suggestionHighlightedTextColor,
-        '--suggestion-highlighted-text-font-weight': suggestionHighlightedTextFontWeight,
-        '--product-title-color': productTitleColor,
-        '--price-color': priceColor,
-        '--discounted-price-color': discountedPriceColor,
-        '--compare-at-price-color': compareAtPriceColor,
-        '--sku-color': skuColor,
-        '--vendor-color': vendorColor,
-        '--view-all-text-color': viewAllTextColor,
-        '--view-all-search-term-color': viewAllSearchTermColor,
-        '--view-all-search-term-font-weight': viewAllSearchTermFontWeight,
-  }"
+  :class="{'flashsearch-is--layout-vertical': isVerticalLayout}"
+  :style="isStyles"
   @touchmove="() => document.activeElement.blur()"
   data-testid="is-wrapper"
 >
   <div class="flashsearch-is__content-wrapper">
     <div class="flashsearch-is-cols">
       <div class="flashsearch-is-col">
-        <fs-suggestions
-          :isNotEmpty="isSuggestionsNotEmpty"
-          :suggestResults="suggestResults"
-        />
-        <fs-collections
-          :isNotEmpty="isCollectionsNotEmpty"
-          :suggestResults="suggestResults"
-        />
-        <fs-pages
-          :isNotEmpty="isPagesNotEmpty"
-          :suggestResults="suggestResults"
-        />
+        <template v-for="(part, index) in partsOfResults">
+          <fs-suggestions
+            :key="index"
+            v-if="shouldShowSuggestionsPart(part)"
+            :isNotEmpty="isSuggestionsNotEmpty"
+            :suggestResults="suggestResults"
+          />
+          <fs-collections
+            :key="index"
+            v-if="shouldShowCollectionsPart(part)"
+            :isNotEmpty="isCollectionsNotEmpty"
+            :suggestResults="suggestResults"
+          />
+          <fs-pages
+            :key="index"
+            v-if="shouldShowPagesPart(part)"
+            :isNotEmpty="isPagesNotEmpty"
+            :suggestResults="suggestResults"
+          />
+          <fs-products
+            :key="index"
+            v-if="shouldShowProductsPart(part)"
+            :isNotEmpty="isProductsNotEmpty"
+            :suggestResults="suggestResults"
+          />
+        </template>
       </div>
       <div class="flashsearch-is-col">
         <fs-products
+          v-if="shouldShowProductsPartForVerticalLayout"
           :isNotEmpty="isProductsNotEmpty"
           :suggestResults="suggestResults"
         />
         <div
           class="flashsearch-is__view-all-results-wrapper"
           v-if="showViewAllResults"
+          data-testid="is-view-all"
         >
           <fs-instant-search-item :url="'/search?q=' + suggestResults.query">
             <div class="flashsearch-is__view-all-results__text-wrapper">
-              <span class="flashsearch-is__view-all-results__text"
-                >View all results for
-              </span>
-              <span class="flashsearch-is__view-all-results__query"
-                >{{suggestResults.query}}</span
-              >
+            <i18n-t
+              keypath="instantSearch.messages.viewAllResults"
+              tag="span"
+              class="flashsearch-is__view-all-results__text"
+              data-testid="is-view-all-text"
+            >
+              <template #searchTerm>
+                <span
+                  class="flashsearch-is__view-all-results__query"
+                  data-testid="is-view-all-st"
+                >
+                  {{suggestResults.query}}
+                </span>
+              </template>
+            </i18n-t>
             </div>
           </fs-instant-search-item>
         </div>
       </div>
     </div>
-    <div class="flashsearch-is__empty-page-wrapper" v-show="showEmptyPage">
-      Sorry, nothing found for
-      <span class="flashsearch-is__empty-page__query"
-        >{{suggestResults.query}}</span
-      >
+    <fs-did-you-mean
+      v-if="!isProductsNotEmpty"
+      :suggest-results="suggestResults"
+    />
+    <div
+      v-show="showEmptyPage"
+      class="flashsearch-is__empty-page-wrapper"
+      data-testid="is-not-found"
+    >
+      <i18n-t keypath="instantSearch.messages.nothingFound" tag="span">
+        <template #searchTerm>
+          <span
+            class="flashsearch-is__empty-page__query"
+            data-testid="is-not-found-st"
+          >
+            {{suggestResults.query}}
+          </span>
+        </template>
+      </i18n-t>
     </div>
   </div>
 </div>
@@ -1701,10 +1789,10 @@ flashsearch.instantSearchTemplates = {
 
   "fs-suggestions": `
 <div
-  class="flashsearch-is__suggestions-wrapper"
   v-if="isNotEmpty"
+  class="flashsearch-is__suggestions-wrapper"
 >
-  <div class="flashsearch-is__label">POPULAR SUGGESTIONS</div>
+  <div class="flashsearch-is__label" data-testid="is-label">{{$t("instantSearch.labels.popularSuggestions")}}</div>
   <fs-instant-search-item
     class="flashsearch-is__item--type-suggestion"
     v-for="(suggestion, index) in suggestResults.suggestions"
@@ -1722,10 +1810,10 @@ flashsearch.instantSearchTemplates = {
 
   "fs-collections": `
 <div
-  class="flashsearch-is__collections-wrapper"
   v-if="isNotEmpty"
+  class="flashsearch-is__collections-wrapper"
 >
-  <div class="flashsearch-is__label">COLLECTIONS</div>
+  <div class="flashsearch-is__label" data-testid="is-label">{{$t("instantSearch.labels.collections")}}</div>
   <fs-instant-search-item
     class="flashsearch-is__item--type-suggestion"
     v-for="(collection, index) in suggestResults.collections"
@@ -1742,8 +1830,8 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-pages": `
-<div class="flashsearch-is__pages-wrapper" v-if="isNotEmpty">
-  <div class="flashsearch-is__label">PAGES</div>
+<div  v-if="isNotEmpty" class="flashsearch-is__pages-wrapper">
+  <div class="flashsearch-is__label" data-testid="is-label">{{$t("instantSearch.labels.pages")}}</div>
   <fs-instant-search-item
     class="flashsearch-is__item--type-suggestion"
     v-for="(page, index) in suggestResults.pages"
@@ -1760,22 +1848,9 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-products": `
-<div
-  class="flashsearch-is__did-you-mean-wrapper"
-  v-if="suggestResults.didYouMean"
->
-  Sorry, nothing found for
-  <span class="flashsearch-is__did-you-mean-query"
-  >{{suggestResults.query}}</span>.&nbsp; Did you mean:
-  <span
-    class="flashsearch-is__did-you-mean-text"
-    @mousedown.prevent=""
-    @click.stop.prevent="chooseDidYouMean"
-    data-testid="is-did-you-mean"
-  >{{suggestResults.didYouMean}}</span>
-</div>
-<div class="flashsearch-is__product-wrapper" v-if="isNotEmpty">
-  <div class="flashsearch-is__label">PRODUCTS</div>
+<div v-if="isNotEmpty" class="flashsearch-is__product-wrapper">
+  <div class="flashsearch-is__label" data-testid="is-label">{{$t("instantSearch.labels.products")}}</div>
+  <fs-did-you-mean :suggest-results="suggestResults"/>
   <div class="flashsearch-is__product-item-wrapper">
     <fs-instant-search-product-item
       v-for="(product, index) in suggestResults.products"
@@ -1783,6 +1858,31 @@ flashsearch.instantSearchTemplates = {
       :product="product"
     />
   </div>
+</div>
+  `,
+
+  "fs-did-you-mean": `
+<div
+  v-if="!!suggestResults.didYouMean"
+  class="flashsearch-is__did-you-mean-wrapper"
+  data-testid="is-dym"
+>
+  <i18n-t keypath="instantSearch.messages.nothingFound" tag="span">
+    <template #searchTerm>
+      <span class="flashsearch-is__did-you-mean-query" data-testid="is-dym-st"
+      >{{suggestResults.query}}</span>
+    </template>
+  </i18n-t>
+  <i18n-t keypath="instantSearch.messages.didYouMean" tag="span" class="flashsearch-is__did-you-mean-text-wrapper">
+    <template #suggestions>
+      <span
+        class="flashsearch-is__did-you-mean-text"
+        @mousedown.prevent=""
+        @click.stop.prevent="chooseDidYouMean"
+        data-testid="is-dym-suggest-text"
+      >{{suggestResults.didYouMean}}</span>
+    </template>
+  </i18n-t>
 </div>
   `,
 
@@ -1816,15 +1916,13 @@ flashsearch.instantSearchTemplates = {
     `,
 
   "fs-highlighter": `
-<span>
-  <span
-    v-for="(chunkItem, index) in chunkItems"
-    :key="index"
-    :class="chunkItem.className"
-    :style="chunkItem.style"
-  >
-    {{chunkItem.text}}
-  </span>
+<span
+  v-for="(chunkItem, index) in chunkItems"
+  :key="index"
+  :class="chunkItem.className"
+  :style="chunkItem.style"
+>
+  {{chunkItem.text}}
 </span>
     `,
 
@@ -1844,8 +1942,16 @@ flashsearch.instantSearchTemplates = {
     `,
 
   "fs-instant-search-product-item": `
-<fs-instant-search-item :url="product.url" class="flashsearch-is__product-item">
-  <div class="flashsearch-is__product__image-wrapper">
+<fs-instant-search-item
+  :url="product.url"
+  class="flashsearch-is__product-item"
+  data-testid="is-product"
+>
+  <div
+    v-if="enableImage"
+    class="flashsearch-is__product__image-wrapper"
+    data-testid="is-product-image"
+  >
     <img
       alt=""
       class="flashsearch-is__product__image"
@@ -1856,10 +1962,28 @@ flashsearch.instantSearchTemplates = {
     <div class="flashsearch-is__product__title" data-testid="is-product-title">
       {{product.title}}
     </div>
+    <div
+      v-if="!!sku && enableSku"
+      class="flashsearch-is__product__sku"
+      data-testid="is-product-sku"
+    >
+      {{$t("instantSearch.labels.sku")}}: {{sku}}
+    </div>
+    <div
+      v-if="!!product.vendor && enableVendor"
+      class="flashsearch-is__product__vendor"
+      data-testid="is-product-vendor"
+    >
+      {{product.vendor}}
+    </div>
     <fs-price
+      class="flashsearch-is__product__price"
       :on-sale="onSale"
       :price="product.priceMin"
       :compare-at-price="product.compareAtPriceMin"
+      :enable-price="enablePrice"
+      :enable-compare-at-price="enableCompareAtPrice"
+      data-testid-prefix="is"
     />
   </div>
 </fs-instant-search-item>
@@ -1885,9 +2009,10 @@ flashsearch.instantSearchTemplates = {
           class="flashsearch-is__searchbar-mobile__input"
           :ref="el => inputRef = el"
           :value="query"
-          placeholder="Search"
+          :placeholder="$t('instantSearch.messages.searchInputPlaceholder')"
           @input="onChangeInputText"
           @keydown="onKeyDown"
+          data-testid="is-mobile-search-box"
         />
         <fs-close-outlined
           @click="onClearAllInputText"
