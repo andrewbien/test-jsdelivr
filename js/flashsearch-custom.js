@@ -107,7 +107,7 @@ flashsearch.searchResultsTemplates = {
           <fs-filters-icon
             :opened="shouldFilterIconOpened"
             @collapseFilters="collapseFilters"
-            @clickmobilefilters="clickMobileFilters"
+            @click-mobile-filters="clickMobileFilters"
             :is-loading="isGetProdLoading"
           />
         </div>
