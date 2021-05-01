@@ -1174,7 +1174,7 @@ flashsearch.searchResultsTemplates = {
       enctype="multipart/form-data"
       class="flashsearch-product__button flashsearch-product__button--type-atc"
       :id="'flashsearch-product-form-' + currentVariant.id"
-      @click="() => document.getElementById('flashsearch-product-form-' + currentVariant.id).submit()"
+      @click="onSubmit"
       data-testid="sr-atc-btn"
     >
       <fs-shopping-cart-outlined class="flashsearch-product__button__icon" />
