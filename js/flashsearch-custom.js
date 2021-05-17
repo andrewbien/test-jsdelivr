@@ -1162,6 +1162,7 @@ flashsearch.searchResultsTemplates = {
       :href="product.url"
       rel="nofollow"
       data-testid="sr-atc-btn"
+      @click="onSelectOptions"
     >
       <fs-shopping-cart-outlined class="flashsearch-product__button__icon" />
       <span class="flashsearch-product__button__text" data-testid="sr-atc-text">{{$t("searchResults.productItem.selectOptions")}}</span>
@@ -1190,6 +1191,7 @@ flashsearch.searchResultsTemplates = {
     :href="product.url"
     rel="nofollow"
     data-testid="sr-atc-btn"
+    @click="onReadMore"
   >
     <fs-info-circle-outlined class="flashsearch-product__button__icon" />
     <span class="flashsearch-product__button__text" data-testid="sr-atc-text">{{$t("searchResults.productItem.readMore")}}</span>
@@ -1243,9 +1245,9 @@ flashsearch.searchResultsTemplates = {
   "fs-product-vendor": `
 <div v-if="enable" class="flashsearch-product-vendor">
   <a
-    :href="'/collections/vendors?q=' + vendor"
     v-html="vendor"
     data-testid="sr-product-vendor"
+    @click="onClickVendor"
   />
 </div>
   `,
@@ -1411,6 +1413,7 @@ flashsearch.searchResultsTemplates = {
   :sm="12"
   :xs="12"
   data-testid="grid-view-item"
+  @click="onClickItem"
 >
   <div class="flashsearch-product">
     <div class="flashsearch-product-image-container">
@@ -1458,6 +1461,7 @@ flashsearch.searchResultsTemplates = {
   :xs="24"
   class="flashsearch-product-wrapper"
   data-testid="list-view-item"
+  @click="onClickItem"
 >
   <fs-row class="flashsearch-product flashsearch-product-list">
     <fs-col :xl="6" :lg="6" :md="6" :sm="24" :xs="24">
@@ -1936,7 +1940,7 @@ flashsearch.instantSearchTemplates = {
     `,
 
   "fs-instant-search-item": `
-<div @mousedown="mouseDown" class="flashsearch-is__item">
+<div @mousedown="onClickItem" class="flashsearch-is__item">
   <slot />
 </div>
     `,
@@ -1946,6 +1950,7 @@ flashsearch.instantSearchTemplates = {
   :url="product.url"
   class="flashsearch-is__product-item"
   data-testid="is-product"
+  @onClickItem="onClickItem"
 >
   <div
     v-if="enableImage"
