@@ -65,8 +65,8 @@ flashsearch.commonTemplates = {
 </span>
 `,
 
-  "fs-skeleton": `
-<a-skeleton active :paragraph="{rows: count, width: width}" :title="false"/>
+  "fs-custom-skeleton": `
+<fs-skeleton active :paragraph="{rows: count, width: width}" :title="false"/>
     `,
 };
 
@@ -184,7 +184,7 @@ flashsearch.searchResultsTemplates = {
     class="fs-search-section-wrapper"
   >
     <h1 class="fs-search-result-header">
-      <fs-skeleton class="fs-skeleton-search-result-header" />
+      <fs-custom-skeleton class="fs-skeleton-search-result-header" />
     </h1>
   </div>
   <!-- Search result header -->
@@ -354,11 +354,11 @@ flashsearch.searchResultsTemplates = {
 <div v-if="isLoading" class="fs-filter-by" :style="{'margin-left': 0}">
   <div class="fs-filter-by__top">
     <div class="fs-filter-by__label">
-      <fs-skeleton class="fs-filter-by__skeleton-label" />
+      <fs-custom-skeleton class="fs-filter-by__skeleton-label" />
     </div>
   </div>
   <div class="fs-filter-by__bottom">
-    <fs-skeleton class="fs-filter-by__skeleton-bottom" :count="2" />
+    <fs-custom-skeleton class="fs-filter-by__skeleton-bottom" :count="2" />
   </div>
 </div>
 <div
@@ -418,10 +418,10 @@ flashsearch.searchResultsTemplates = {
   >
     <div class="fs-filter__top">
       <h5 class="fs-filter__title" data-testid="filter-title">
-        <fs-skeleton class="fs-filter__title__skeleton" />
+        <fs-custom-skeleton class="fs-filter__title__skeleton" />
       </h5>
     </div>
-    <fs-skeleton class="fs-filter__skeleton" :count="4" />
+    <fs-custom-skeleton class="fs-filter__skeleton" :count="4" />
   </div>
 </template>
 <template v-else-if="!!filters">
@@ -594,6 +594,7 @@ flashsearch.searchResultsTemplates = {
               :label="item.label"
               :count="item.count"
               :is-selected-option="isSelectedItem(item)"
+              :show-count="showCount"
               @on-select-option="onClickItem(item)"
             />
           </template>
@@ -602,6 +603,7 @@ flashsearch.searchResultsTemplates = {
             :sub-collections="getSubCollections(item.value)"
             :parent-collection="item"
             :should-reset-selected-item="shouldResetChild(item)"
+            :show-count="showCount"
             @set-highlight-parent="setHighlight(item)"
             :data-testid-prefix="'parent-' + index"
           />
@@ -615,6 +617,7 @@ flashsearch.searchResultsTemplates = {
           :count="item.count"
           :is-selected-option="isSelectedItem(item)"
           @on-select-option="onClickItem(item)"
+          :show-count="showCount"
         />
       </template>
     </div>
@@ -642,6 +645,7 @@ flashsearch.searchResultsTemplates = {
         <fs-filter-list-option
           :label="item.name"
           :is-selected-option="isSelectedItem(item)"
+          :show-count="showCount"
           @on-select-option="onClickItem(item)"
           data-testid="sub-option"
           :label-data-testid="buildTestId(index)"
@@ -661,6 +665,7 @@ flashsearch.searchResultsTemplates = {
     v-else
     :label="item.name"
     :is-selected-option="isSelectedItem(item)"
+    :show-count="showCount"
     @on-select-option="onClickItem(item)"
     data-testid="sub-option"
     :label-data-testid="buildTestId(index)"
@@ -934,7 +939,7 @@ flashsearch.searchResultsTemplates = {
   <span v-if="label !== undefined" class="fs-filter-option__value" :data-testid="labelDataTestid">
     {{label}}
   </span>
-  <fs-filter-option-amount v-if="count !== undefined" :count="count" />
+  <fs-filter-option-amount v-if="showCount && count !== undefined" :count="count" />
 </span>
   `,
 
@@ -966,7 +971,7 @@ flashsearch.searchResultsTemplates = {
 >
   <a
     @click.prevent="onSelect"
-    class="fs-filter-option fs-filter-swatch-option__option"
+    class="fs-filter-option fs-filter-swatch-option"
     :class="{'fs-filter-option--selected': isSelected}"
     role="checkbox"
     :aria-checked="isSelected ? 'true' : 'false'"
@@ -975,7 +980,7 @@ flashsearch.searchResultsTemplates = {
     <span class="fs--filter-swatch-option__col-left">
       <span
         class="fs-filter-swatch-option__image"
-        :class="{'fs-filter-swatch-option__image--selected': isSelected}"
+        :class="{'fs-filter-swatch-option--selected': isSelected, 'fs-filter-swatch-option--has-border': fsUtils.isWhiteColor(hex)}"
         :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': hex}"
       />
       <span
@@ -1006,10 +1011,10 @@ flashsearch.searchResultsTemplates = {
   "fs-filters-icon": `
 <div v-if="enable && isLoading" class="fs-filters-icon-wrapper">
   <div v-if="isHorizontalLayout" class="fs-filters-icon">
-    <fs-skeleton class="fs-filters-icon__skeleton" />
+    <fs-custom-skeleton class="fs-filters-icon__skeleton" />
   </div>
   <div class="fs-filters-icon fs-filters-icon--mobile">
-    <fs-skeleton class="fs-filters-icon__skeleton--mobile" />
+    <fs-custom-skeleton class="fs-filters-icon__skeleton--mobile" />
   </div>
 </div>
 <div v-else-if="enable" class="fs-filters-icon-wrapper" v-bind="$attrs">
@@ -1112,7 +1117,7 @@ flashsearch.searchResultsTemplates = {
 
   "fs-total-products": `
 <div v-if="enable && isLoading" class="fs-total-products">
-  <fs-skeleton class="fs-total-products__skeleton" />
+  <fs-custom-skeleton class="fs-total-products__skeleton" />
 </div>
 <div v-else-if="enable" class="fs-total-products" v-bind="$attrs">
   <i18n-t
@@ -1135,10 +1140,10 @@ flashsearch.searchResultsTemplates = {
   "fs-search-results-sort-by": `
 <div v-if="enable && isLoading" class="fs-sort-by">
   <div class="fs-sort-by__content">
-    <fs-skeleton class="fs-sort-by__skeleton-content" />
+    <fs-custom-skeleton class="fs-sort-by__skeleton-content" />
   </div>
   <div class="fs-sort-by__mobile-content">
-    <fs-skeleton class="fs-sort-by__skeleton-mobile-content" />
+    <fs-custom-skeleton class="fs-sort-by__skeleton-mobile-content" />
   </div>
 </div>
 <div
@@ -1359,7 +1364,7 @@ flashsearch.searchResultsTemplates = {
         :sold-out-text='$t("searchResults.quickView.soldOutLabel")'
         :sale-text='$t("searchResults.quickView.saleLabel")'
       />
-      <fs-carousel arrows dot-position="top" :ref="el => caroRef = el">
+      <fs-carousel arrows dot-position="bottom" :ref="el => caroRef = el">
         <template #prevArrow>
           <div
             class="fs-quickview__slick-arrow"
@@ -1784,7 +1789,7 @@ flashsearch.searchResultsTemplates = {
   "fs-search-results-views": `
 <div v-if="enable">
   <div v-if="isLoading" class="fs-views">
-    <fs-skeleton class="fs-views__skeleton" />
+    <fs-custom-skeleton class="fs-views__skeleton" />
   </div>
   <div v-else class="fs-views">
     <a
@@ -1856,15 +1861,15 @@ flashsearch.searchResultsTemplates = {
   `,
 
   "fs-skeleton-product-image": `
-<fs-skeleton class="fs-skeleton-product-image" />
+<fs-custom-skeleton class="fs-skeleton-product-image" />
   `,
 
   "fs-skeleton-product-title": `
-<fs-skeleton class="fs-skeleton-product-title" />
+<fs-custom-skeleton class="fs-skeleton-product-title" />
   `,
 
   "fs-skeleton-product-text": `
-<fs-skeleton class="fs-skeleton-product-text" />
+<fs-custom-skeleton class="fs-skeleton-product-text" />
   `,
 };
 
@@ -1982,7 +1987,7 @@ flashsearch.instantSearchTemplates = {
     `,
 
   "fs-is-suggestions": `
-<div v-if="isNotEmpty" class="fs-is-suggestions-wrapper">
+<div v-if="isNotEmpty" class="fs-is-item-wrapper fs-is-suggestions-wrapper">
   <fs-is-item-label :label='$t("instantSearch.labels.popularSuggestions")' />
   <fs-is-suggestion-item
     v-for="(suggestion, index) in suggestResults.suggestions"
@@ -1996,7 +2001,7 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-is-collections": `
-<div v-if="isNotEmpty" class="fs-is-collections-wrapper">
+<div v-if="isNotEmpty" class="fs-is-item-wrapper fs-is-collections-wrapper">
   <fs-is-item-label :label='$t("instantSearch.labels.collections")' />
   <fs-is-suggestion-item
     v-for="(collection, index) in suggestResults.collections"
@@ -2010,7 +2015,7 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-is-pages": `
-<div  v-if="isNotEmpty" class="fs-is-collections-wrapper">
+<div  v-if="isNotEmpty" class="fs-is-item-wrapper fs-is-pages-wrapper">
   <fs-is-item-label :label='$t("instantSearch.labels.pages")'/>
   <fs-is-suggestion-item
     v-for="(page, index) in suggestResults.pages"
@@ -2024,7 +2029,7 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-is-product-items": `
-<div v-if="isNotEmpty" class="fs-is-product-items-wrapper">
+<div v-if="isNotEmpty" class="fs-is-item-wrapper fs-is-product-items-wrapper">
   <fs-is-item-label :label='$t("instantSearch.labels.products")'/>
   <fs-is-did-you-mean :suggest-results="suggestResults"/>
   <div class="fs-is-product-items-container">
