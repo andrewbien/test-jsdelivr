@@ -141,7 +141,7 @@ flashsearch.searchResultsTemplates = {
           :is-coll-page="isCollPage"
         />
         <!-- Search results -->
-        <div class="fs-sr-wrapper">
+        <div class="fs-sr-wrapper fs-main__sr-wrapper">
           <fs-search-results-items
             :search-result="searchResult"
             :view-type="viewType"
