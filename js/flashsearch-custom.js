@@ -81,7 +81,6 @@ flashsearch.searchResultsTemplates = {
 <div
   id="fs-main-container"
   class="fs-container"
-  :style="srStyles"
 >
   <fs-layout>
     <!-- Header -->
@@ -162,7 +161,6 @@ flashsearch.searchResultsTemplates = {
         <fs-quick-view-item
           v-if="shouldShowQuickView"
           :product="currentQvProduct"
-          :get-container="() => document.getElementById('fs-main-container')"
         />
       </fs-layout-content>
     </fs-layout>
