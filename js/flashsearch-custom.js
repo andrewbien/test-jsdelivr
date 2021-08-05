@@ -287,7 +287,6 @@ flashsearch.searchResultsTemplates = {
   "fs-horizontal-filters-section": `
 <div
   class="fs-filters-section fs--hirozontal-filters-section"
-  :class="{'fs-filters-section--visible': collapseActiveKey === '1'}"
 >
   <div class="fs-filters-section-inner">
     <fs-collapse :bordered="false" :active-key="collapseActiveKey">
@@ -305,10 +304,9 @@ flashsearch.searchResultsTemplates = {
 </div>
 <div
   class="fs-filters-section"
-  :class="{'fs-filters-section--visible': collapseActiveKey === '1'}"
 >
   <fs-drawer
-    class="fs-filters-section-inner--mobile"
+    class="fs-filters-section-mobile"
     placement="left"
     :closable="true"
     @close="closeMobileFilters"
@@ -912,7 +910,7 @@ flashsearch.searchResultsTemplates = {
     data-testid="option"
   >
     <span
-      class="fs-filter-option__value fs-filter-box-option__value"
+      class="fs-filter-option-value fs-filter-box-option__value"
       data-testid="option-value"
     >
       {{label}}
@@ -926,7 +924,7 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-filter-list-option": `
-<span
+<div
   class="fs-filter-option"
   :class="{'fs-filter-option--single-list': !multiple, 'fs-filter-option--multiple-list': multiple, 'fs-filter-option--selected': isSelected}"
   @click.prevent="onSelect"
@@ -934,11 +932,11 @@ flashsearch.searchResultsTemplates = {
   role="checkbox"
   :aria-checked="isSelected ? 'true' : 'false'"
 >
-  <span v-if="label !== undefined" class="fs-filter-option__value" :data-testid="labelDataTestid">
+  <div v-if="label !== undefined" class="fs-filter-option-value" :data-testid="labelDataTestid">
     {{label}}
-  </span>
+  </div>
   <fs-filter-option-amount v-if="showCount && count !== undefined" :count="count" />
-</span>
+</div>
   `,
 
   "fs-filter-review-rating-option": `
@@ -950,7 +948,7 @@ flashsearch.searchResultsTemplates = {
   :aria-checked="isSelected ? 'true' : 'false'"
   data-testid="option"
 >
-  <span class="fs-filter-option__value">
+  <span class="fs-filter-option-value">
     <span :style="{display: 'none'}" data-testid="option-value">
       {{rate}}
     </span>
@@ -975,22 +973,22 @@ flashsearch.searchResultsTemplates = {
     :aria-checked="isSelected ? 'true' : 'false'"
     data-testid="option"
   >
-    <span class="fs--filter-swatch-option__col-left">
+    <div class="fs--filter-swatch-option__col-left">
       <span
         class="fs-filter-swatch-option__image"
         :class="{'fs-filter-swatch-option--selected': isSelected, 'fs-filter-swatch-option--has-border': fsUtils.isWhiteColor(hex)}"
         :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': hex}"
       />
       <span
-        class="fs-filter-option__value fs-filter-swatch-option__value"
+        class="fs-filter-option-value fs-filter-swatch-option__value"
         data-testid="option-value"
       >
         {{label}}
       </span>
-    </span>
-    <span class="fs-filter-swatch-option__col-right">
+    </div>
+    <div class="fs-filter-swatch-option__col-right">
       <fs-filter-option-amount :count="count" />
-    </span>
+    </div>
   </a>
 </fs-tooltip>
     `,
@@ -1156,6 +1154,7 @@ flashsearch.searchResultsTemplates = {
       size="large"
       v-model:value="sortBy"
       @change="changeSortByDesktop"
+      :dropdown-match-select-width=false
       :get-popup-container="() => document.getElementById('fs-sr-toolbars-sort-by')"
     >
       <fs-select-option
@@ -1163,7 +1162,7 @@ flashsearch.searchResultsTemplates = {
         :key="index"
         :value="value"
         data-testid="sr-sort-by-option"
-        class="fs-sort-by__option"
+        class="fs-sort-by-option fs-sort-by__option"
       >
         {{label}}
       </fs-select-option>
@@ -1191,20 +1190,20 @@ flashsearch.searchResultsTemplates = {
       :get-container="() => document.getElementById('fs-sr-toolbars-sort-by')"
     >
       <template v-slot:title>
-        <span class="fs-sort-by__title" data-testid="sr-sort-by-title">Sort by</span>
+        <span class="fs-sort-by-mobile__title" data-testid="sr-sort-by-title">Sort by</span>
       </template>
-      <div class="fs-sort-by__mobile-content-inner">
-        <span
+      <div class="fs-sort-by-mobile__inner">
+        <div
           v-for="({value, label}, index) in sortByList"
           :key="index"
-          class="fs-sort-by__item"
-          :class="{'fs-sort-by__item--selected': sortBy === value}"
+          class="fs-sort-by-option fs-sort-by-mobile__option"
+          :class="{'fs-sort-by-mobile__option--selected': sortBy === value}"
           @click.prevent="changeSortByMobile(value)"
           data-testid="sr-sort-by-option"
           :aria-selected="sortBy === value ? 'true' : 'false'"
         >
           {{label}}
-        </span>
+        </div>
       </div>
     </fs-drawer>
   </div>
@@ -1888,7 +1887,7 @@ flashsearch.instantSearchTemplates = {
   "fs-instant-search": `
 <div
   :ref="ref => isWrapperRef = ref"
-  v-show="enablePopup"
+  v-show="true"
   class="fs-is-wrapper"
   :class="{'fs-is--layout-vertical': isVerticalLayout}"
   :style="isStyles"
