@@ -114,9 +114,13 @@ flashsearch.searchResultsTemplates = {
         @on-select-list-view="onSelectListView"
       />
       <!-- Filters section: horizontal layout -->
-      <fs-horizontal-filters-section
+      <fs-filters-section-horizontal
         :search-result="searchResult"
         :collapse-active-key="collapseActiveKey"
+      />
+      <!-- Filters section: mobile layout -->
+      <fs-filters-section-mobile
+        :search-result="searchResult"
         :should-show-mobile-filter="shouldShowMobileFilter"
         @close-mobile-filters="closeMobileFilters"
         @show-results="showResults"
@@ -129,7 +133,7 @@ flashsearch.searchResultsTemplates = {
     <fs-layout>
       <!-- Filters section: vertical layout -->
       <fs-layout-sider v-if="isVerticalLeftLayout" :width="270">
-        <fs-vertical-filters-section :is-loading="isSearchLoading" :searchResult="searchResult"/>
+        <fs-filters-section-vertical :is-loading="isSearchLoading" :searchResult="searchResult"/>
       </fs-layout-sider>
       <fs-layout-content>
         <!-- Empty page -->
@@ -270,9 +274,10 @@ flashsearch.searchResultsTemplates = {
 </div>
   `,
 
-  "fs-vertical-filters-section": `
+  // Filters
+  "fs-filters-section-vertical": `
 <div
-  class="fs-filters-section fs-vertical-filters-section"
+  class="fs-filters-section fs-filters-section-vertical"
 >
   <fs-filter-by clear-all-btn-position="label" :is-loading="isLoading" />
   <fs-filters
@@ -283,8 +288,7 @@ flashsearch.searchResultsTemplates = {
 </div>
   `,
 
-  // Filters
-  "fs-horizontal-filters-section": `
+  "fs-filters-section-horizontal": `
 <div
   class="fs-filters-section fs--hirozontal-filters-section"
 >
@@ -302,8 +306,10 @@ flashsearch.searchResultsTemplates = {
     </fs-collapse>
   </div>
 </div>
+    `,
+
+  "fs-filters-section-mobile": `
 <div
-  id="fs-filters-section-mobile"
   class="fs-filters-section"
 >
   <fs-drawer
@@ -312,7 +318,6 @@ flashsearch.searchResultsTemplates = {
     :closable="true"
     @close="closeMobileFilters"
     :visible="shouldShowMobileFilter"
-    :get-container="() => document.getElementById('fs-filters-section-mobile')"
   >
     <template #title>
       <span class="fs-filters-title-wrapper">
@@ -333,7 +338,7 @@ flashsearch.searchResultsTemplates = {
     </div>
   </fs-drawer>
 </div>
-    `,
+  `,
 
   "fs-filter-by-each-filter": `
 <fs-filter-by
