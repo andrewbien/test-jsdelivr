@@ -303,6 +303,7 @@ flashsearch.searchResultsTemplates = {
   </div>
 </div>
 <div
+  id="fs-filters-section-mobile"
   class="fs-filters-section"
 >
   <fs-drawer
@@ -311,6 +312,7 @@ flashsearch.searchResultsTemplates = {
     :closable="true"
     @close="closeMobileFilters"
     :visible="shouldShowMobileFilter"
+    :get-container="() => document.getElementById('fs-filters-section-mobile')"
   >
     <template #title>
       <span class="fs-filters-title-wrapper">
