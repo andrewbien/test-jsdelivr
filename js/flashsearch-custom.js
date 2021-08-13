@@ -319,7 +319,7 @@ flashsearch.searchResultsTemplates = {
   "fs-filters-section-horizontal-style-2": `
   <div class="fs-filters-section fs-filters-section-horizontal-style-2">
   <div class="fs-filters-section-inner">
-    <h3 class="fs-filters-sections-horizontal-style-2__title">
+    <h3 v-if="!isLoading" class="fs-filters-sections-horizontal-style-2__title">
       {{$t("searchResults.toolbars.filters")}}
     </h3>
     <fs-row>
