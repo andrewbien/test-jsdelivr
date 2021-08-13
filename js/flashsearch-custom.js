@@ -124,6 +124,7 @@ flashsearch.searchResultsTemplates = {
         v-if="isHorizontalStyle2Layout"
         :search-result="searchResult"
         :collapse-active-key="collapseActiveKey"
+        :is-loading="isSearchLoading"
       />
       <!-- Filters section: mobile layout -->
       <fs-filters-section-mobile
@@ -316,25 +317,19 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-filters-section-horizontal-style-2": `
-  <div
-  class="fs-filters-section fs-filters-section-horizontal-style-2"
->
+  <div class="fs-filters-section fs-filters-section-horizontal-style-2">
   <div class="fs-filters-section-inner">
-    <fs-collapse :bordered="false" :active-key="collapseActiveKey">
-      <fs-collapse-panel
-        class="fs-filters__collapse-item"
-        key="1"
-        :show-arrow="false"
-      >
-        <fs-row>
-          <fs-filters
-          :filters="searchResult.filters"
-          :show-collapse="false"
-          :show-dropdown="true"
-        />
-        </fs-row>
-      </fs-collapse-panel>
-    </fs-collapse>
+    <h3 class="fs-filters-sections-horizontal-style-2__title">
+      {{$t("searchResults.toolbars.filters")}}
+    </h3>
+    <fs-row>
+      <fs-filters
+        :filters="searchResult.filters"
+        :show-collapse="false"
+        :show-dropdown="true"
+        :is-loading="isLoading"
+      />
+    </fs-row>
   </div>
 </div>
   `,
@@ -1174,7 +1169,7 @@ flashsearch.searchResultsTemplates = {
 
   "fs-filters-icon": `
 <div v-if="enable && isLoading" class="fs-filters-icon-wrapper">
-  <div v-if="isHorizontalLayout || isHorizontalStyle2Layout" class="fs-filters-icon">
+  <div v-if="isHorizontalLayout" class="fs-filters-icon">
     <fs-custom-skeleton class="fs-filters-icon__skeleton" />
   </div>
   <div class="fs-filters-icon fs-filters-icon--mobile">
@@ -1183,7 +1178,7 @@ flashsearch.searchResultsTemplates = {
 </div>
 <div v-else-if="enable" class="fs-filters-icon-wrapper" v-bind="$attrs">
   <div
-    v-if="isHorizontalLayout || isHorizontalStyle2Layout"
+    v-if="isHorizontalLayout"
     class="fs-filters-icon"
     :class="{'fs-filters-icon--opened': opened}"
     data-testid="sr-filter-icon"
