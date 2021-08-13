@@ -115,6 +115,13 @@ flashsearch.searchResultsTemplates = {
       />
       <!-- Filters section: horizontal layout -->
       <fs-filters-section-horizontal
+        v-if="isHorizontalLayout"
+        :search-result="searchResult"
+        :collapse-active-key="collapseActiveKey"
+      />
+      <!-- Filters section: horizontal style 2 layout -->
+      <fs-filters-section-horizontal-style-2
+        v-if="isHorizontalStyle2Layout"
         :search-result="searchResult"
         :collapse-active-key="collapseActiveKey"
       />
@@ -127,7 +134,7 @@ flashsearch.searchResultsTemplates = {
       />
     </fs-layout>
     <!-- Filter by: horizontal layout only -->
-    <fs-layout v-if="isHorizontalLayout">
+    <fs-layout v-if="isHorizontalLayout || isHorizontalStyle2Layout">
       <fs-filter-by :is-loading="isSearchLoading" />
     </fs-layout>
     <fs-layout>
@@ -308,6 +315,30 @@ flashsearch.searchResultsTemplates = {
 </div>
     `,
 
+  "fs-filters-section-horizontal-style-2": `
+  <div
+  class="fs-filters-section fs-filters-section-horizontal-style-2"
+>
+  <div class="fs-filters-section-inner">
+    <fs-collapse :bordered="false" :active-key="collapseActiveKey">
+      <fs-collapse-panel
+        class="fs-filters__collapse-item"
+        key="1"
+        :show-arrow="false"
+      >
+        <fs-row>
+          <fs-filters
+          :filters="searchResult.filters"
+          :show-collapse="false"
+          :show-dropdown="true"
+        />
+        </fs-row>
+      </fs-collapse-panel>
+    </fs-collapse>
+  </div>
+</div>
+  `,
+
   "fs-filters-section-mobile": `
 <div
   class="fs-filters-section"
@@ -348,6 +379,7 @@ flashsearch.searchResultsTemplates = {
   :should-show-clear-all-btn="false"
   :option-closable="false"
   :should-show-option-label="false"
+  :show-coll-options-on-coll-page="true"
   :visible="visible"
   option-test-id="filter-by-option-each-filter"
 />
@@ -467,19 +499,70 @@ flashsearch.searchResultsTemplates = {
               :visible="shouldShowFilterBy(index)"
             />
             <fs-button-clear-filter-option
-              v-else-if="shouldShowClearBtn(filter)"
-              @clear="clearFilter(filter)"
+              v-else-if="isFilterOptionsDirty(filter)"
+              @clear="clearFilterOptions(filter)"
             />
           </div>
         </template>
-        <fs-filter :filter="filter" :isMobile="isMobile" />
-        <fs-button-clear-filter-option
-          v-if="isMobile && shouldShowClearBtn(filter)"
-          @clear="clearFilter(filter)"
-        />
+        <fs-filter :filter="filter" :isMobile="isMobile" :show-clear-btn="isMobile" />
       </fs-collapse-panel>
     </template>
   </fs-collapse>
+  <template v-else-if="showDropdown">
+    <fs-col
+      v-for="(filter, index) in filters"
+      :key="index"
+      v-show="!isFilterEmpty(filter)"
+      :xl="6"
+      :lg="6"
+      :md="12"
+      :sm="24"
+      :xs="24"
+      class="fs-filter"
+      data-testid="filter"
+    >
+      <fs-dropdown
+        overlay-class-name="fs-filter-dropdown"
+        :trigger="['click']"
+        :overlayStyle="{width: filterDropdownWidth + 'px'}"
+        v-model:visible="filterDropdownVisible[filter.filterType.value]"
+      >
+        <template #overlay>
+          <fs-menu>
+            <fs-filter
+              :filter="filter"
+              :isMobile="isMobile"
+              :show-apply-btn="true"
+              :show-clear-btn="true"
+              :show-swatch-tooltip="false"
+            />
+          </fs-menu>
+        </template>
+        <!-- Title -->
+        <fs-tooltip data-testid="filter-tooltip-content">
+          <template #title v-if="filter.displayTooltip">
+            <span data-testid="filter-tooltip-content">{{filter.tooltipContent}}</span>
+          </template>
+          <fs-button
+            size="large"
+            class="fs-filter-dropdown__title-btn"
+            @click="onClickDropdownTitleBtn"
+          >
+            <span class="fs-filter-dropdown-btn__left">
+              <span class="fs-filter-dropdown__title"> {{filter.label}} </span>
+              <!-- Selected filter options count -->
+              <span v-if="getFilterOptionsCount(filter) > 0" class="fs-filter-dropdown__options-count-wrapper">
+                <span class="fs-filter-dropdown__options-count">{{getFilterOptionsCount(filter)}}</span>
+              </span>
+            </span>
+            <span class="fs-filter-dropdown-btn__right">
+              <fs-down-outlined />
+            </span>
+          </fs-button>
+        </fs-tooltip>
+      </fs-dropdown>
+    </fs-col>
+  </template>
   <template v-else>
     <fs-col
       v-for="(filter, index) in filters"
@@ -509,8 +592,8 @@ flashsearch.searchResultsTemplates = {
           </fs-tooltip>
         </h5>
         <fs-button-clear-filter-option
-          v-if="shouldShowClearBtn(filter)"
-          @clear="clearFilter(filter)"
+          v-if="isFilterOptionsDirty(filter)"
+          @clear="clearFilterOptions(filter)"
         />
       </div>
       <fs-filter :filter="filter" :isMobile="isMobile" />
@@ -524,37 +607,57 @@ flashsearch.searchResultsTemplates = {
   v-if="isCollectionsFilter"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-clear-btn="showClearBtn"
 />
 <fs-filter-review-rating
   v-else-if="isReviewRatingFilter"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
 />
 <fs-filter-stock-status
   v-else-if="isStockStatusFilter"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
 />
 <fs-filter-list
   v-else-if="isRangeFilterWithDisplayTypeList"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
 />
 <fs-filter-range
   v-else-if="isRangeFilterWithDisplayTypeRange"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
 />
 <fs-filter-list
   v-else-if="isListFilter"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
 />
-<fs-filter-box v-else-if="isBoxFilter" :filter="filter" :is-mobile="isMobile" />
+<fs-filter-box
+  v-else-if="isBoxFilter"
+  :filter="filter"
+  :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
+/>
 <fs-filter-swatch
   v-else-if="isSwatchFilter"
   :filter="filter"
   :is-mobile="isMobile"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn"
+  :show-tooltip="showSwatchTooltip"
 />
     `,
 
@@ -624,10 +727,12 @@ flashsearch.searchResultsTemplates = {
         />
       </template>
     </div>
-    <fs-button-view-more-filter-options
-      v-if="shouldUseViewMore && getFilterValues(query).length > 5"
-      :on-view-more-status="onViewMoreStatus"
+    <fs-filter-actions
+      :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
+      :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+      :is-view-more-status="isViewMoreStatus"
       @view-more="viewMore"
+      @on-clear-filter-options="clearFilterOptions"
     />
   </div>
 </div>
@@ -717,15 +822,19 @@ flashsearch.searchResultsTemplates = {
         :key="index"
         :label="label"
         :count="count"
-        :is-selected-option="isSelectedOptions(value)"
+        :is-selected-option="isSelectedOption(value)"
         @on-select-option="selectOption(value)"
       />
     </template>
   </div>
-  <fs-button-view-more-filter-options
-    v-if="shouldUseViewMore && getFilterValues(query).length > 5"
-    :on-view-more-status="onViewMoreStatus"
+  <fs-filter-actions
+    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    :is-view-more-status="isViewMoreStatus"
     @view-more="viewMore"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
   />
 </div>
     `,
@@ -757,10 +866,14 @@ flashsearch.searchResultsTemplates = {
       @on-select-options="selectOptions(value)"
     />
   </div>
-  <fs-button-view-more-filter-options
-    v-if="shouldUseViewMore && getFilterValues(query).length > 4"
-    :on-view-more-status="onViewMoreStatus"
+  <fs-filter-actions
+    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 4"
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    :is-view-more-status="isViewMoreStatus"
     @view-more="viewMore"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
   />
 </div>
     `,
@@ -816,6 +929,12 @@ flashsearch.searchResultsTemplates = {
       :tipFormatter="formatTooltip"
     />
   </div>
+  <fs-filter-actions
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="onApplySelections"
+  />
 </div>
     `,
 
@@ -834,6 +953,12 @@ flashsearch.searchResultsTemplates = {
     :color="filter.rating.hex"
     :text="shouldDisplaySelectedRatingAndAbove ? $t('searchResults.filter.rateTextAndUp') : ''"
     :count="getCount(value)"
+  />
+  <fs-filter-actions
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="onApplySelections"
   />
 </div>
     `,
@@ -861,6 +986,12 @@ flashsearch.searchResultsTemplates = {
       </fs-col>
     </fs-row>
   </div>
+  <fs-filter-actions
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="onApplySelections"
+  />
 </div>
     `,
 
@@ -891,13 +1022,18 @@ flashsearch.searchResultsTemplates = {
       :is-selected-options="isSelectedOptions(value)"
       @on-select-options="selectOptions(value)"
       @on-select-option="selectOption(value)"
-    />
-    <fs-button-view-more-filter-options
-      v-if="shouldUseViewMore && getFilterValues(query).length > (isMobile ? 5 : 20)"
-      :on-view-more-status="onViewMoreStatus"
-      @view-more="viewMore"
+      :show-tooltip="showTooltip"
     />
   </div>
+  <fs-filter-actions
+    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > (isMobile ? 5 : 20)"
+    :show-apply-btn="showApplyBtn"
+    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+    :is-view-more-status="isViewMoreStatus"
+    @view-more="viewMore"
+    @on-clear-filter-options="clearFilterOptions"
+    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
+  />
 </div>
     `,
 
@@ -967,7 +1103,7 @@ flashsearch.searchResultsTemplates = {
 
   "fs-filter-swatch-option": `
 <fs-tooltip
-  :title="label + ' ' + '(' + count + ')'"
+  :title="showTooltip ? label + ' ' + '(' + count + ')': undefined"
   :mouse-leave-delay="0"
   :mouse-enter-delay="1"
   overlay-class-name="fs-filter-option__tooltip"
@@ -994,7 +1130,7 @@ flashsearch.searchResultsTemplates = {
       </span>
     </div>
     <div class="fs-filter-swatch-option__col-right">
-      <fs-filter-option-amount :count="count" />
+      <fs-filter-option-amount class="fs-filter-swatch-option__amount" :count="count" />
     </div>
   </a>
 </fs-tooltip>
@@ -1009,11 +1145,36 @@ flashsearch.searchResultsTemplates = {
   ({{count}})
 </span>
   `,
+
+  "fs-apply-filter-selections-btn": `
+<fs-button type="primary" class="fs-apply-filter-selections-btn" @click.prevent="onApply">
+  apply selection
+</fs-button>
+    `,
+
+  "fs-filter-actions": `
+<div class="fs-filter-actions">
+  <div v-if="showViewMoreBtn" class="fs-filter-actions__top">
+    <fs-button-view-more-filter-options
+      v-if="showViewMoreBtn"
+      :is-view-more-status="isViewMoreStatus"
+      @view-more="viewMore"
+    />
+  </div>
+  <div v-if="showApplyBtn || showClearBtn" class="fs-filter-actions__bottom">
+    <fs-apply-filter-selections-btn v-if="showApplyBtn" @on-apply="onApplySelections"/>
+    <fs-button-clear-filter-option
+      v-if="showClearBtn"
+      @clear="onClearFilterOptions"
+    />
+  </div>
+</div>
+    `,
   // End filter types
 
   "fs-filters-icon": `
 <div v-if="enable && isLoading" class="fs-filters-icon-wrapper">
-  <div v-if="isHorizontalLayout" class="fs-filters-icon">
+  <div v-if="isHorizontalLayout || isHorizontalStyle2Layout" class="fs-filters-icon">
     <fs-custom-skeleton class="fs-filters-icon__skeleton" />
   </div>
   <div class="fs-filters-icon fs-filters-icon--mobile">
@@ -1022,7 +1183,7 @@ flashsearch.searchResultsTemplates = {
 </div>
 <div v-else-if="enable" class="fs-filters-icon-wrapper" v-bind="$attrs">
   <div
-    v-if="isHorizontalLayout"
+    v-if="isHorizontalLayout || isHorizontalStyle2Layout"
     class="fs-filters-icon"
     :class="{'fs-filters-icon--opened': opened}"
     data-testid="sr-filter-icon"
@@ -1084,7 +1245,7 @@ flashsearch.searchResultsTemplates = {
   @click.prevent="viewMore"
   data-testid="filter-view-more"
 >
-  {{onViewMoreStatus ? $t("searchResults.filter.viewLess") : $t("searchResults.filter.viewMore")}}
+  {{isViewMoreStatus ? $t("searchResults.filter.viewLess") : $t("searchResults.filter.viewMore")}}
 </fs-button>
     `,
   // End filters
@@ -1508,9 +1669,9 @@ flashsearch.searchResultsTemplates = {
 
   "fs-search-results-grid-view-item": `
 <fs-col
-  :xl="isHorizontalLayout ? 6 : 8"
-  :lg="isHorizontalLayout ? 6 : 8"
-  :md="isHorizontalLayout ? 6 : 8"
+  :xl="isHorizontalStylesLayout ? 6 : 8"
+  :lg="isHorizontalStylesLayout ? 6 : 8"
+  :md="isHorizontalStylesLayout ? 6 : 8"
   :sm="12"
   :xs="12"
   class="fs-sr-item-wrapper fs-sr-grid-item-wrapper"
@@ -1707,12 +1868,12 @@ flashsearch.searchResultsTemplates = {
   <template v-if="isLoading && viewType === 'grid'">
     <fs-col
       class="fs-sr-item-wrapper"
-      :xl="isHorizontalLayout ? 6 : 8"
-      :lg="isHorizontalLayout ? 6 : 8"
-      :md="isHorizontalLayout ? 6 : 8"
+      :xl="isHorizontalStylesLayout ? 6 : 8"
+      :lg="isHorizontalStylesLayout ? 6 : 8"
+      :md="isHorizontalStylesLayout ? 6 : 8"
       :sm="12"
       :xs="12"
-      v-for="index in [...Array(isHorizontalLayout ? 4 : 3).keys()]"
+      v-for="index in [...Array(isHorizontalStylesLayout ? 4 : 3).keys()]"
       :key="index"
     >
       <fs-skeleton-product-image />
