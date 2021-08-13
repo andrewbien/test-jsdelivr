@@ -1148,7 +1148,7 @@ flashsearch.searchResultsTemplates = {
 
   "fs-apply-filter-selections-btn": `
 <fs-button type="primary" class="fs-apply-filter-selections-btn" @click.prevent="onApply">
-  apply selection
+  {{$t("searchResults.filter.applySelections")}}
 </fs-button>
     `,
 
