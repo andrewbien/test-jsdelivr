@@ -297,7 +297,7 @@ flashsearch.searchResultsTemplates = {
 
   "fs-filters-section-horizontal": `
 <div
-  class="fs-filters-section fs--hirozontal-filters-section"
+  class="fs-filters-section fs-filters-section-horizontal"
 >
   <div class="fs-filters-section-inner">
     <fs-collapse :bordered="false" :active-key="collapseActiveKey">
