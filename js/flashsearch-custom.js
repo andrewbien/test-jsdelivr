@@ -187,20 +187,20 @@ flashsearch.searchResultsTemplates = {
   `,
 
   "fs-search-section": `
-<div class="fs-search-section-wrapper">
+<div class="fs-search-section">
   <!-- Skeleton: Search header -->
   <div
     v-if="isLoading && enableSearchPageHeader"
-    class="fs-search-section-wrapper"
+    class="fs-search-section"
   >
-    <h1 class="fs-search-result-header">
+    <h1 class="fs-search-result-header fs-search-section__header">
       <fs-custom-skeleton class="fs-skeleton-search-result-header" />
     </h1>
   </div>
   <!-- Search result header -->
   <h1
     v-else-if="enableSearchPageHeader"
-    class="fs-search-result-header"
+    class="fs-search-result-header fs-search-section__header"
     data-testid="sr-search-page-header"
   >
     {{$t("searchResults.searchPageHeader.pageHeader", {count: totalProducts,
@@ -469,7 +469,7 @@ flashsearch.searchResultsTemplates = {
     </template>
     <template v-for="(filter, index) in filters" :key="'' + index">
       <fs-collapse-panel
-        v-show="!isFilterEmpty(filter)"
+        v-if="!isFilterEmpty(filter)"
         class="fs-filter"
       >
         <template #header>
