@@ -2050,7 +2050,7 @@ flashsearch.instantSearchTemplates = {
   "fs-instant-search": `
 <div
   :ref="ref => isWrapperRef = ref"
-  v-show="enablePopup"
+  v-show="true"
   class="fs-is-wrapper"
   :class="{'fs-is--layout-vertical': isVerticalLayout}"
   :style="isStyles"
@@ -2221,7 +2221,7 @@ flashsearch.instantSearchTemplates = {
       :src="product.featuredImage.originalSrc"
     />
   </div>
-  <div class="fs-is-product-info">
+  <div class="fs-is-product-info fs-is-product-item__info">
     <!-- Title -->
     <div class="fs-is-product-title fs-is-product-item__title" data-testid="is-product-title">
       {{product.title}}
