@@ -79,7 +79,6 @@ flashsearch.searchResultsTemplates = {
 
   "fs-main": `
 <div
-  id="fs-main-container"
   class="fs-container"
 >
   <fs-layout>
@@ -631,6 +630,7 @@ flashsearch.searchResultsTemplates = {
   :is-mobile="isMobile"
   :show-apply-btn="showApplyBtn"
   :show-clear-btn="showClearBtn"
+  :prefix-symbol="isPriceFilter ? fsUtils.getCurrentCurrencySymbol() : undefined"
 />
 <fs-filter-list
   v-else-if="isListFilter"
@@ -659,10 +659,14 @@ flashsearch.searchResultsTemplates = {
   // Filter types
   "fs-filter-collection": `
 <div
-  class="fs-filter__content fs-filter__content--list fs-filter-collection__content"
+  class="fs-filter__content fs-filter-collection__content"
   :class="{'fs-filter--screen-mobile': isMobile}"
 >
-  <div class="fs-filter__content">
+  <div
+    class="fs-filter__content"
+    :class="{'fs-filter__content--scrollable': shouldUseScrollbar}"
+    data-testid="filter-content"
+  >
     <fs-input
       v-if="shouldShowSearchBox"
       class="fs-filter__searchbox"
@@ -672,9 +676,7 @@ flashsearch.searchResultsTemplates = {
       data-testid="filter-searchbox"
     />
     <div
-      class="fs-filter__content-inner"
-      :class="{'fs-filter__content-inner--scrollable': shouldUseScrollbar}"
-      data-testid="filter-content"
+      class="fs-filter__content-inner fs-filter-collection__content-inner"
     >
       <fs-collapse
         v-if="shouldUseMultiLevelCollections"
@@ -722,15 +724,15 @@ flashsearch.searchResultsTemplates = {
         />
       </template>
     </div>
-    <fs-filter-actions
-      :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
-      :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-      :is-view-more-status="isViewMoreStatus"
-      @view-more="viewMore"
-      @on-clear-filter-options="clearFilterOptions"
-    />
   </div>
 </div>
+<fs-filter-actions
+  :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  :is-view-more-status="isViewMoreStatus"
+  @view-more="viewMore"
+  @on-clear-filter-options="clearFilterOptions"
+/>
     `,
 
   "fs-filter-sub-collection": `
@@ -778,8 +780,9 @@ flashsearch.searchResultsTemplates = {
 
   "fs-filter-list": `
 <div
-  class="fs-filter__content fs-filter__content--list"
-  :class="{'fs-filter__content--multiple-list': filter.multipleSelection}"
+  class="fs-filter__content"
+  :class="{'fs-filter-multiple-list__content': filter.multipleSelection, 'fs-filter__content--scrollable': shouldUseScrollbar}"
+  data-testid="filter-content"
 >
   <fs-input
     v-if="shouldShowSearchBox"
@@ -790,9 +793,7 @@ flashsearch.searchResultsTemplates = {
     data-testid="filter-searchbox"
   />
   <div
-    class="fs-filter__content-inner"
-    :class="{'fs-filter__content-inner--scrollable': shouldUseScrollbar}"
-    data-testid="filter-content"
+    class="fs-filter__content-inner fs-filter-list__content-inner"
   >
     <fs-row v-if="filter.multipleSelection" data-testid="option-groups">
       <fs-col
@@ -822,20 +823,24 @@ flashsearch.searchResultsTemplates = {
       />
     </template>
   </div>
-  <fs-filter-actions
-    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    :is-view-more-status="isViewMoreStatus"
-    @view-more="viewMore"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
-  />
 </div>
+<fs-filter-actions
+  :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 5"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  :is-view-more-status="isViewMoreStatus"
+  @view-more="viewMore"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
+/>
     `,
 
   "fs-filter-box": `
-<div class="fs-filter__content">
+<div
+  class="fs-filter__content"
+  :class="{'fs-filter__content--scrollable': shouldUseScrollbar}"
+  data-testid="filter-content"
+>
   <fs-input
     v-if="shouldShowSearchBox"
     class="fs-filter__searchbox"
@@ -846,8 +851,6 @@ flashsearch.searchResultsTemplates = {
   />
   <div
     class="fs-filter__content-inner fs-filter-box__content-inner"
-    :class="{'fs-filter__content-inner--scrollable': shouldUseScrollbar}"
-    data-testid="filter-content"
   >
     <fs-filter-box-option
       v-for="({label, count, value}, index) in getFilterValues(query, {viewMoreLimit: 4})"
@@ -861,20 +864,20 @@ flashsearch.searchResultsTemplates = {
       @on-select-options="selectOptions(value)"
     />
   </div>
-  <fs-filter-actions
-    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 4"
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    :is-view-more-status="isViewMoreStatus"
-    @view-more="viewMore"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
-  />
 </div>
+<fs-filter-actions
+  :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > 4"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  :is-view-more-status="isViewMoreStatus"
+  @view-more="viewMore"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
+/>
     `,
 
   "fs-filter-range": `
-<div class="fs-filter__content fs-filter__content--range">
+<div class="fs-filter__content fs-filter-range__content">
   <div class="fs-filter-range__amount">
     <span class="fs-filter-range__min">
       <fs-input-number
@@ -924,19 +927,19 @@ flashsearch.searchResultsTemplates = {
       :tipFormatter="formatTooltip"
     />
   </div>
-  <fs-filter-actions
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="onApplySelections"
-  />
 </div>
+<fs-filter-actions
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="onApplySelections"
+/>
     `,
 
   "fs-filter-review-rating": `
 <div
   class="fs-filter__content fs-filter__content--list"
-  :class="{'fs-filter__content--multiple-list': shouldDisplaySelectedRatingOnly && filter.multipleSelection}"
+  :class="{'fs-filter-multiple-list__content': shouldDisplaySelectedRatingOnly && filter.multipleSelection}"
 >
   <fs-filter-review-rating-option
     v-for="(value, index) in ['5', '4', '3', '2', '1']"
@@ -949,20 +952,21 @@ flashsearch.searchResultsTemplates = {
     :text="shouldDisplaySelectedRatingAndAbove ? $t('searchResults.filter.rateTextAndUp') : ''"
     :count="getCount(value)"
   />
-  <fs-filter-actions
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="onApplySelections"
-  />
 </div>
+<fs-filter-actions
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="onApplySelections"
+/>
     `,
 
   "fs-filter-stock-status": `
 <div
-  class="fs-filter__content fs-filter__content--list fs-filter__content--multiple-list"
+  class="fs-filter__content fs-filter-multiple-list__content"
+  data-testid="filter-content"
 >
-  <div class="fs-filter__content-inner" data-testid="filter-content">
+  <div class="fs-filter__content-inner">
     <fs-row data-testid="option-groups">
       <fs-col
         v-for="({label, value, count}, index) in filterValues"
@@ -981,17 +985,21 @@ flashsearch.searchResultsTemplates = {
       </fs-col>
     </fs-row>
   </div>
-  <fs-filter-actions
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="onApplySelections"
-  />
 </div>
+<fs-filter-actions
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="onApplySelections"
+/>
     `,
 
   "fs-filter-swatch": `
-<div class="fs-filter__content">
+<div
+  class="fs-filter__content"
+  :class="{'fs-filter__content--scrollable': shouldUseScrollbar}"
+  data-testid="filter-content"
+>
   <fs-input
     v-if="shouldShowSearchBox"
     class="fs-filter__searchbox"
@@ -999,11 +1007,10 @@ flashsearch.searchResultsTemplates = {
     placeholder="Search options"
     :value="query"
     data-testid="filter-searchbox"
+
   />
   <div
     class="fs-filter__content-inner fs-filter-swatch__content-inner"
-    :class="{'fs-filter__content-inner--scrollable': shouldUseScrollbar}"
-    data-testid="filter-content"
   >
     <fs-filter-swatch-option
       v-for="({label, count, value, hex, imageUrl}, index) in getFilterValues(query, {viewMoreLimit: isMobile ? 5 : 20})"
@@ -1020,16 +1027,16 @@ flashsearch.searchResultsTemplates = {
       :show-tooltip="showTooltip"
     />
   </div>
-  <fs-filter-actions
-    :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > (isMobile ? 5 : 20)"
-    :show-apply-btn="showApplyBtn"
-    :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
-    :is-view-more-status="isViewMoreStatus"
-    @view-more="viewMore"
-    @on-clear-filter-options="clearFilterOptions"
-    @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
-  />
 </div>
+<fs-filter-actions
+  :show-view-more-btn="shouldUseViewMore && getFilterValues(query).length > (isMobile ? 5 : 20)"
+  :show-apply-btn="showApplyBtn"
+  :show-clear-btn="showClearBtn && isFilterOptionsDirty()"
+  :is-view-more-status="isViewMoreStatus"
+  @view-more="viewMore"
+  @on-clear-filter-options="clearFilterOptions"
+  @on-apply-selections="filter.multipleSelection ? onApplySelections() : onApplySelection()"
+/>
     `,
 
   "fs-filter-box-option": `
@@ -1307,7 +1314,6 @@ flashsearch.searchResultsTemplates = {
 </div>
 <div
   v-else-if="enable"
-  id="fs-sr-toolbars-sort-by"
   class="fs-sort-by"
   v-bind="$attrs"
   data-testid="sr-sort-by"
@@ -1318,7 +1324,6 @@ flashsearch.searchResultsTemplates = {
       v-model:value="sortBy"
       @change="changeSortByDesktop"
       :dropdown-match-select-width=false
-      :get-popup-container="() => document.getElementById('fs-sr-toolbars-sort-by')"
     >
       <fs-select-option
         v-for="({value, label}, index) in sortByList"
@@ -1350,7 +1355,6 @@ flashsearch.searchResultsTemplates = {
       @close="closeSortBy"
       :visible="shouldOpenSortBy"
       height="auto"
-      :get-container="() => document.getElementById('fs-sr-toolbars-sort-by')"
     >
       <template v-slot:title>
         <span class="fs-sort-by-mobile__title" data-testid="sr-sort-by-title">Sort by</span>
@@ -1527,16 +1531,11 @@ flashsearch.searchResultsTemplates = {
       <fs-carousel arrows dot-position="bottom" :ref="el => caroRef = el">
         <template #prevArrow>
           <div
-            class="fs-quickview__slick-arrow"
-            :style="{left: '10px', 'z-index': 2}"
-          >
-            <fs-left-circle-outlined />
-          </div>
+            class="fs-quickview__slick-arrow fs-quickview__slick-arrow-prev"
+          />
         </template>
         <template #nextArrow>
-          <div class="fs-quickview__slick-arrow" style="right: 10px">
-            <fs-right-circle-outlined />
-          </div>
+          <div class="fs-quickview__slick-arrow fs-quickview__slick-arrow-next"/>
         </template>
         <div v-for="(image, index) in product.images" :key="index">
           <div class="fs-quickview-thumbs-item-wrapper">
@@ -1599,7 +1598,7 @@ flashsearch.searchResultsTemplates = {
             :name="option.name"
             :label="option.name"
           >
-            <fs-select size="large" v-model:value="formState[option.name]" :get-popup-container="() => document.getElementById('fs-main-container')" data-testid="sr-qv-options-select">
+            <fs-select size="large" v-model:value="formState[option.name]" data-testid="sr-qv-options-select">
               <fs-select-option
                 v-for="(value, index) in option.values"
                 :key="index"
@@ -1803,34 +1802,36 @@ flashsearch.searchResultsTemplates = {
         :xs="24"
         class="fs-sr-list-item__col--center"
       >
-        <!-- Title -->
-        <fs-product-title
-          :url="product.url"
-          :title="product.title"
-          class="fs-sr-list-item__title"
-        />
-         <!-- Review rate -->
-        <fs-sr-review-rate
-          v-if="enableReviewRating"
-          class="fs-sr-list-item__review-rate"
-          :count="product.reviewCount"
-          :rate="product.reviewRatings"
-          :reviews-text='$t("searchResults.listViewProductItem.rateReviews")'
-          :review-text='$t("searchResults.listViewProductItem.rateReview")'
-          :no-reviews-text='$t("searchResults.listViewProductItem.rateNoReviews")'
-        />
-        <!-- Vendor -->
-        <fs-product-vendor
-          v-if="enableVendor"
-          :vendor="product.vendor"
-          class="fs-sr-list-item__vendor"
-        />
-        <!-- Description -->
-        <fs-product-description
-          v-if="enableDescription"
-          class="fs-sr-list-item__description"
-          :description="product.description"
-        />
+        <div class="fs-sr-list-item__info">
+          <!-- Title -->
+          <fs-product-title
+            :url="product.url"
+            :title="product.title"
+            class="fs-sr-list-item__title"
+          />
+          <!-- Review rate -->
+          <fs-sr-review-rate
+            v-if="enableReviewRating"
+            class="fs-sr-list-item__review-rate"
+            :count="product.reviewCount"
+            :rate="product.reviewRatings"
+            :reviews-text='$t("searchResults.listViewProductItem.rateReviews")'
+            :review-text='$t("searchResults.listViewProductItem.rateReview")'
+            :no-reviews-text='$t("searchResults.listViewProductItem.rateNoReviews")'
+          />
+          <!-- Vendor -->
+          <fs-product-vendor
+            v-if="enableVendor"
+            :vendor="product.vendor"
+            class="fs-sr-list-item__vendor"
+          />
+          <!-- Description -->
+          <fs-product-description
+            v-if="enableDescription"
+            class="fs-sr-list-item__description"
+            :description="product.description"
+          />
+        </div>
       </fs-col>
       <fs-col
         :xl="6"
@@ -2050,7 +2051,7 @@ flashsearch.instantSearchTemplates = {
   "fs-instant-search": `
 <div
   :ref="ref => isWrapperRef = ref"
-  v-show="true"
+  v-show="enablePopup"
   class="fs-is-wrapper"
   :class="{'fs-is--layout-vertical': isVerticalLayout}"
   :style="isStyles"
