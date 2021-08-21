@@ -2051,7 +2051,7 @@ flashsearch.instantSearchTemplates = {
   "fs-instant-search": `
 <div
   :ref="ref => isWrapperRef = ref"
-  v-show="enablePopup"
+  v-show="true"
   class="fs-is-wrapper"
   :class="{'fs-is--layout-vertical': isVerticalLayout}"
   :style="isStyles"
