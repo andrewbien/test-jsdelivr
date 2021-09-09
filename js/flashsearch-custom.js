@@ -1611,7 +1611,10 @@ flashsearch.searchResultsTemplates = {
             </fs-select>
           </fs-form-item>
           <fs-row>
-            <fs-col :xl="8" :lg="8" :md="8" :sm="8" :xs="8">
+            <fs-col
+              v-if="isCurrentVariantAvailable && currentVariant.availableForSale"
+              :xl="8" :lg="8" :md="8" :sm="8" :xs="8"
+            >
               <fs-form-item name="quantity" :label="$t('searchResults.quickView.quantity')">
                 <fs-input-number
                   size="large"
@@ -1624,7 +1627,7 @@ flashsearch.searchResultsTemplates = {
             <fs-col :xl="16" :lg="16" :md="16" :sm="16" :xs="16">
               <fs-form-item>
                 <fs-button
-                  v-if="isCurrentVariantAvailable"
+                  v-if="isCurrentVariantAvailable && currentVariant.availableForSale"
                   class="fs-quickview__add-to-cart-btn"
                   html-type="submit"
                   size="large"
@@ -1632,6 +1635,15 @@ flashsearch.searchResultsTemplates = {
                   data-testid="sr-qv-atc-btn"
                 >
                   {{$t("searchResults.quickView.addToCart")}}
+                </fs-button>
+                <fs-button
+                  v-else-if="isCurrentVariantAvailable && !currentVariant.availableForSale"
+                  size="large"
+                  class="fs-quickview__add-to-cart-btn"
+                  :disabled="true"
+                  data-testid="sr-qv-disabled-btn"
+                >
+                  {{$t("searchResults.quickView.soldOutButton")}}
                 </fs-button>
                 <fs-button
                   v-else
@@ -2051,7 +2063,7 @@ flashsearch.instantSearchTemplates = {
   "fs-instant-search": `
 <div
   :ref="ref => isWrapperRef = ref"
-  v-show="true"
+  v-show="enablePopup"
   class="fs-is-wrapper"
   :class="{'fs-is--layout-vertical': isVerticalLayout}"
   :style="isStyles"
