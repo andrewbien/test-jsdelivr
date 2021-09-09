@@ -81,8 +81,6 @@ flashsearch.searchResultsTemplates = {
 <div
   class="fs-container"
 >
-<h1>isSearchLoading:{{isSearchLoading}}</h1>
-<h1>isSearchFetching:{{isSearchFetching}}</h1>
   <fs-layout>
     <!-- Header -->
     <fs-layout-header>
@@ -1875,7 +1873,6 @@ flashsearch.searchResultsTemplates = {
 
   "fs-search-results-items": `
 <fs-row class="fs-sr-items">
-<h1>isLoading: {{isLoading}}</h1>
   <template v-if="isLoading && viewType === 'grid'">
     <fs-col
       class="fs-sr-item-wrapper"
