@@ -519,7 +519,7 @@ flashsearch.searchResultsTemplates = {
         overlay-class-name="fs-filter-dropdown"
         :trigger="['click']"
         :overlayStyle="{width: filterDropdownWidth + 'px'}"
-        v-model:visible="filterDropdownVisible[filter.filterType.value]"
+        v-model:visible="filterDropdownVisible[filter.id]"
       >
         <template #overlay>
           <fs-menu>
@@ -2338,7 +2338,6 @@ flashsearch.instantSearchTemplates = {
   :enable="doesShowWidget"
   :input-elem="inputElem"
   :position="position"
-  :width="WIDGET_WIDTH"
 />
     `,
 
