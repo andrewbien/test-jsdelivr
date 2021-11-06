@@ -109,8 +109,6 @@ flashsearch.searchResultsTemplates = {
         :view-type="viewType"
         @collapse-filters="collapseFilters"
         @on-mobile-filters-icon-click="onMobileFiltersIconClick"
-        @on-select-grid-view="onSelectGridView"
-        @on-select-list-view="onSelectListView"
       />
       <!-- Filters section: horizontal layout -->
       <fs-filters-section-horizontal
@@ -234,6 +232,12 @@ flashsearch.searchResultsTemplates = {
         :is-loading="isLoading"
       />
     </div>
+    <div class="fs-toolbar__col--middle">
+    <fs-search-results-views
+      :view-type="viewType"
+      :is-loading="isLoading"
+    />
+    </div>
     <div class="fs-toolbar__col--right">
       <fs-total-products
         class="fs-toolbar__total-products--right fs-toolbar__total-products--section-top"
@@ -241,13 +245,6 @@ flashsearch.searchResultsTemplates = {
         :is-loading="isLoading"
       />
       <fs-search-results-sort-by
-        class="fs-toolbar__sort-by--right"
-        :is-loading="isLoading"
-      />
-      <fs-search-results-views
-        :view-type="viewType"
-        @on-select-grid-view="onSelectGridView"
-        @on-select-list-view="onSelectListView"
         :is-loading="isLoading"
       />
     </div>
@@ -1500,7 +1497,33 @@ flashsearch.searchResultsTemplates = {
   `,
 
   "fs-product-description": `
-<div class="fs-ellipsis-text fs-product-description" v-html="description" data-testid="sr-product-desc"/>
+<div class="fs-ellipsis-text fs-product-description" data-testid="sr-product-desc">{{description.replace(/<[^>]*>/g, "")}}</div>
+  `,
+
+  "fs-product-color": `
+<fs-tooltip
+  :title="showTooltip ? color: undefined"
+  overlay-class-name="fs-filter-option__tooltip"
+>
+  <span @mouseover="onSelect" class="fs-product-color" :class="{'fs-product-color--selected': isSelected}">
+    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color)}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': color}">
+    </span>
+  </span>
+</fs-tooltip>
+  `,
+
+  "fs-product-colors": `
+<div class="fs-product-colors" v-if="getColorOptionValues(product.options).length > 1">
+  <fs-product-color
+  v-for="(color, index) in getColorOptionValues(product.options)"
+  :key="index"
+  :color="color"
+  :product="product"
+  :is-selected="isSelectedItemColor(color)"
+  @on-select="onSelectItemColor(color)"
+  :show-tooltip="true"
+/>
+</div>
   `,
 
   "fs-quick-view-item": `
@@ -1677,11 +1700,11 @@ flashsearch.searchResultsTemplates = {
 
   "fs-search-results-grid-view-item": `
 <fs-col
-  :xl="isHorizontalStylesLayout ? 6 : 8"
-  :lg="isHorizontalStylesLayout ? 6 : 8"
-  :md="isHorizontalStylesLayout ? 6 : 8"
-  :sm="12"
-  :xs="12"
+  :xl="gridViewDesktopColl"
+  :lg="gridViewDesktopColl"
+  :md="gridViewTabletColl"
+  :sm="gridViewMobileColl"
+  :xs="gridViewMobileColl"
   class="fs-sr-item-wrapper fs-sr-grid-item-wrapper"
   data-testid="grid-view-item"
   @click="onClickItem"
@@ -1759,6 +1782,8 @@ flashsearch.searchResultsTemplates = {
         :enable-compare-at-price="enableCompareAtPrice"
         data-testid-prefix="sr"
       />
+      <!-- product color -->
+      <fs-product-colors :product="product"/>
     </div>
   </div>
 </fs-col>
@@ -1777,7 +1802,7 @@ flashsearch.searchResultsTemplates = {
 >
   <div class="fs-sr-list-item">
     <fs-row class="fs-sr-list-item__inner">
-      <fs-col :xl="6" :lg="6" :md="6" :sm="24" :xs="24" class="fs-sr-list-item__col--left">
+      <fs-col :xl="8" :lg="8" :md="8" :sm="8" :xs="8" class="fs-sr-list-item__col--left">
         <!-- Image -->
         <div
           class="fs-sr-item__image-wrapper fs-sr-list-item__image-wrapper"
@@ -1811,12 +1836,12 @@ flashsearch.searchResultsTemplates = {
         </div>
       </fs-col>
       <fs-col
-        :xl="12"
-        :lg="12"
-        :md="12"
-        :sm="24"
-        :xs="24"
-        class="fs-sr-list-item__col--center"
+        :xl="16"
+        :lg="16"
+        :md="16"
+        :sm="16"
+        :xs="16"
+        class="fs-sr-list-item__col--center-newdesign"
       >
         <div class="fs-sr-list-item__info">
           <!-- Title -->
@@ -1835,6 +1860,18 @@ flashsearch.searchResultsTemplates = {
             :review-text='$t("searchResults.listViewProductItem.rateReview")'
             :no-reviews-text='$t("searchResults.listViewProductItem.rateNoReviews")'
           />
+          <!-- Price -->
+        <fs-price-range
+          v-if="enablePrice"
+          class="fs-sr-item__price fs-sr-list-item__price"
+          :price-varies="priceVaries"
+          :on-sale="onSale"
+          :price-min="product.priceMin"
+          :price-max="product.priceMax"
+          :compare-at-price-min="product.compareAtPriceMin"
+          :enable-compare-at-price="enableCompareAtPrice"
+          data-testid-prefix="sr"
+        />
           <!-- Vendor -->
           <fs-product-vendor
             v-if="enableVendor"
@@ -1847,28 +1884,9 @@ flashsearch.searchResultsTemplates = {
             class="fs-sr-list-item__description"
             :description="product.description"
           />
+          <!-- product color -->
+          <fs-product-colors :product="product"/>
         </div>
-      </fs-col>
-      <fs-col
-        :xl="6"
-        :lg="6"
-        :md="6"
-        :sm="24"
-        :xs="24"
-        class="fs-sr-list-item__col--right"
-      >
-        <!-- Price -->
-        <fs-price-range
-          v-if="enablePrice"
-          class="fs-sr-item__price fs-sr-list-item__price"
-          :price-varies="priceVaries"
-          :on-sale="onSale"
-          :price-min="product.priceMin"
-          :price-max="product.priceMax"
-          :compare-at-price-min="product.compareAtPriceMin"
-          :enable-compare-at-price="enableCompareAtPrice"
-          data-testid-prefix="sr"
-        />
       </fs-col>
     </fs-row>
   </div>
@@ -1877,15 +1895,15 @@ flashsearch.searchResultsTemplates = {
 
   "fs-search-results-items": `
 <fs-row class="fs-sr-items">
-  <template v-if="isLoading && viewType === 'grid'">
+  <template v-if="isLoading && !isListView">
     <fs-col
       class="fs-sr-item-wrapper"
-      :xl="isHorizontalStylesLayout ? 6 : 8"
-      :lg="isHorizontalStylesLayout ? 6 : 8"
-      :md="isHorizontalStylesLayout ? 6 : 8"
-      :sm="12"
-      :xs="12"
-      v-for="index in [...Array(isHorizontalStylesLayout ? 4 : 3).keys()]"
+      :xl="gridViewDesktopColl"
+      :lg="gridViewDesktopColl"
+      :md="gridViewTabletColl"
+      :sm="gridViewMobileColl"
+      :xs="gridViewMobileColl"
+      v-for="index in [...Array(12).keys()]"
       :key="index"
     >
       <fs-skeleton-product-image />
@@ -1893,7 +1911,7 @@ flashsearch.searchResultsTemplates = {
       <fs-skeleton-product-text />
     </fs-col>
   </template>
-  <template v-else-if="isLoading && viewType === 'list'">
+  <template v-else-if="isLoading && isListView">
     <fs-col
       class="fs-sr-item-wrapper fs-sr-list-item-wrapper"
       :xl="24"
@@ -1946,14 +1964,14 @@ flashsearch.searchResultsTemplates = {
       </div>
     </fs-col>
   </template>
-  <template v-else-if="isLoading === false && viewType === 'grid'">
+  <template v-else-if="isLoading === false && !isListView">
     <fs-search-results-grid-view-item
       v-for="(product, index) in searchResult.products"
       :key="index"
       :product="product"
     />
   </template>
-  <template v-else-if="isLoading === false && viewType === 'list'">
+  <template v-else-if="isLoading === false && isListView">
     <fs-search-results-list-view-item
       v-for="(product, index) in searchResult.products"
       :key="index"
@@ -1963,7 +1981,80 @@ flashsearch.searchResultsTemplates = {
 </fs-row>
     `,
 
-  "fs-search-results-views": `
+    "fs-search-results-views": `
+<div v-if="enable" class="fs-sr-views">
+  <div class="fs-sr-views-screen fs-sr-views-screen--desktop">
+    <span
+      @click.prevent="onSelectListView"
+      class="fs-sr-view-item fs-sr-view-list"
+      :class="{'fs-sr-view-item--active': isListView}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView2"
+      class="fs-sr-view-item fs-sr-view-grid-2"
+      :class="{'fs-sr-view-item--active': isGridView2}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView3"
+      class="fs-sr-view-item fs-sr-view-grid-3"
+      :class="{'fs-sr-view-item--active': isGridView3}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView4"
+      class="fs-sr-view-item fs-sr-view-grid-4"
+      :class="{'fs-sr-view-item--active': isGridView4}"
+    ></span>
+    <span
+      v-if="!isVerticalLeftLayout"
+      @click.prevent="onSelectGridView6"
+      class="fs-sr-view-item fs-sr-view-grid-6"
+      :class="{'fs-sr-view-item--active': isGridView6}"
+    ></span>
+  </div>
+  <div class="fs-sr-views-screen fs-sr-views-screen--tablet">
+    <span
+      @click.prevent="onSelectListView"
+      class="fs-sr-view-item fs-sr-view-list"
+      :class="{'fs-sr-view-item--active': isListView}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView2"
+      class="fs-sr-view-item fs-sr-view-grid-2"
+      :class="{'fs-sr-view-item--active': isGridView2}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView3"
+      class="fs-sr-view-item fs-sr-view-grid-3"
+      :class="{'fs-sr-view-item--active': isGridView3}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView4"
+      class="fs-sr-view-item fs-sr-view-grid-4"
+      :class="{'fs-sr-view-item--active': isGridView4}"
+    ></span>
+  </div>
+
+  <div class="fs-sr-views-screen fs-sr-views-screen--mobile">
+    <span
+      @click.prevent="onSelectListView"
+      class="fs-sr-view-item fs-sr-view-list"
+      :class="{'fs-sr-view-item--active': isListView}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView1"
+      class="fs-sr-view-item fs-sr-view-grid-1"
+      :class="{'fs-sr-view-item--active': isGridView1}"
+    ></span>
+    <span
+      @click.prevent="onSelectGridView2"
+      class="fs-sr-view-item fs-sr-view-grid-2"
+      :class="{'fs-sr-view-item--active': isGridView2}"
+    ></span>
+  </div>
+</div>
+    `,
+
+  "fs-search-results-views-backup": `
 <div v-if="enable">
   <div v-if="isLoading" class="fs-views">
     <fs-custom-skeleton class="fs-views__skeleton" />
