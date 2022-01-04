@@ -22,7 +22,13 @@ flashsearch.commonTemplates = {
 
   "fs-price-range": `
 <p class="fs-price" :data-testid="buildDataTestId('price')">
-  <span v-if="priceVaries" class="fs-price--type-regular">
+  <template v-if="priceVaries && priceVariesFormat === 'from'">
+    <span class="fs-price--text">{{$t("general.price.from")}}</span>
+    <span class="fs-price--type-regular">&nbsp;
+    <span class="fs-price-min" v-html="fsUtils.formatDisplayMoney(priceMin)"/>
+    </span>
+  </template>
+  <span v-else-if="priceVaries" class="fs-price--type-regular">
     <span
       class="fs-price-min"
       v-html="fsUtils.formatDisplayMoney(priceMin)"
@@ -1311,7 +1317,7 @@ flashsearch.searchResultsTemplates = {
 </div>
 <div
   v-else-if="enable"
-  class="fs-sort-by"
+  :class="'fs-sort-by' + (shape ? ' fs-sort-by-shape-' + shape : '')"
   v-bind="$attrs"
   data-testid="sr-sort-by"
 >
@@ -1375,58 +1381,104 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-product-buttons": `
-<div class="fs-product-button-wrapper">
-  <a
-    v-if="enableQuickView"
-    class="fs-product-button fs-product-button--type-quick-view"
-    rel="nofollow"
-    @click="showQuickView"
-    data-testid="sr-quick-view-btn"
-  >
-    <fs-eye-outlined class="fs-product-button__icon" />
-    <span class="fs-product-button__text" data-testid="sr-quick-view-text">{{quickViewText}}</span>
-  </a>
-  <span v-if="product.availableForSale && enableAddToCart">
+<div :class="['fs-product-button-wrapper', 'fs-product-button-desktop-' + buttonDesignDesktop, 'fs-product-button-mobile-' + buttonDesignMobile]" v-bind="$attrs">
+  <fs-tooltip v-if="enableQuickView" :title="quickViewText" :overlay-class-name="'fs-product-button-tooltip' + ' fs-product-button-tooltip-desktop-' + buttonDesignDesktop" :placement="buttonDesignDesktop === 'design-7' ? 'left': undefined">
     <a
-      v-if="product.variants.length > 1"
+      class="fs-product-button fs-product-button--type-quick-view"
+      rel="nofollow"
+      @click="showQuickView"
+      data-testid="sr-quick-view-btn"
+    >
+      <fs-eye-outlined class="fs-product-button__icon" />
+      <span class="fs-product-button__text" data-testid="sr-quick-view-text">{{quickViewText}}</span>
+    </a>
+  </fs-tooltip>
+  <template v-if="product.availableForSale && enableAddToCart">
+    <fs-tooltip v-if="product.variants.length > 1" :title="selectOptionsText" :overlay-class-name="'fs-product-button-tooltip' + ' fs-product-button-tooltip-desktop-' + buttonDesignDesktop" >
+      <a
+        class="fs-product-button fs-product-button--type-atc"
+        :href="product.url"
+        rel="nofollow"
+        data-testid="sr-atc-btn"
+        @click="onSelectOptions"
+      >
+        <fs-shopping-cart-outlined class="fs-product-button__icon" />
+        <span class="fs-product-button__text" data-testid="sr-atc-text">{{selectOptionsText}}</span>
+      </a>
+    </fs-tooltip>
+    <fs-tooltip v-else :title="addToCartText" :overlay-class-name="'fs-product-button-tooltip' + ' fs-product-button-tooltip-desktop-' + buttonDesignDesktop" >
+      <form
+        method="post"
+        action="/cart/add"
+        acceptCharset="UTF-8"
+        enctype="multipart/form-data"
+        class="fs-product-button fs-product-button--type-atc"
+        :id="'fs-product-form-' + currentVariant.id"
+        @click="onSubmit"
+        data-testid="sr-atc-btn"
+      >
+        <fs-shopping-cart-outlined class="fs-product-button__icon" />
+        <input type="hidden" name="form_type" value="product" />
+        <input type="hidden" name="quantity" value="1" min="1" />
+        <input type="hidden" name="id" :value="currentVariant.id" />
+        <span class="fs-product-button__text" data-testid="sr-atc-text">{{addToCartText}}</span>
+      </form>
+    </fs-tooltip>
+  </template>
+  <fs-tooltip v-else-if="enableAddToCart" :title="readMoreText" :overlay-class-name="'fs-product-button-tooltip' + ' fs-product-button-tooltip-desktop-' + buttonDesignDesktop" >
+    <a
       class="fs-product-button fs-product-button--type-atc"
       :href="product.url"
       rel="nofollow"
       data-testid="sr-atc-btn"
-      @click="onSelectOptions"
+      @click="onReadMore"
     >
-      <fs-shopping-cart-outlined class="fs-product-button__icon" />
-      <span class="fs-product-button__text" data-testid="sr-atc-text">{{selectOptionsText}}</span>
+      <fs-info-circle-outlined class="fs-product-button__icon" />
+      <span class="fs-product-button__text" data-testid="sr-atc-text">{{readMoreText}}</span>
     </a>
-    <form
-      v-else
-      method="post"
-      action="/cart/add"
-      acceptCharset="UTF-8"
-      enctype="multipart/form-data"
-      class="fs-product-button fs-product-button--type-atc"
-      :id="'fs-product-form-' + currentVariant.id"
-      @click="onSubmit"
-      data-testid="sr-atc-btn"
-    >
-      <fs-shopping-cart-outlined class="fs-product-button__icon" />
-      <input type="hidden" name="form_type" value="product" />
-      <input type="hidden" name="quantity" value="1" min="1" />
-      <input type="hidden" name="id" :value="currentVariant.id" />
-      <span class="fs-product-button__text" data-testid="sr-atc-text">{{addToCartText}}</span>
-    </form>
-  </span>
-  <a
-    v-else-if="enableAddToCart"
-    class="fs-product-button fs-product-button--type-atc"
-    :href="product.url"
-    rel="nofollow"
-    data-testid="sr-atc-btn"
-    @click="onReadMore"
-  >
-    <fs-info-circle-outlined class="fs-product-button__icon" />
-    <span class="fs-product-button__text" data-testid="sr-atc-text">{{readMoreText}}</span>
-  </a>
+  </fs-tooltip>
+</div>
+<!-- Add to cart button at bottom -->
+<div v-if="enableAddToCart && (buttonDesignDesktop === 'design-7' || buttonDesignMobile === 'design-7')" :class="['fs-product-button-atc-bottom-wrapper', 'fs-product-button-desktop-' + buttonDesignDesktop, 'fs-product-button-mobile-' + buttonDesignMobile]" v-bind="$attrs">
+  <div class="fs-product-button-atc-bottom">
+    <template v-if="product.availableForSale">
+      <a
+        v-if="product.variants.length > 1"
+        class="fs-product-button-atc-bottom-inner ajax_add_to_cart"
+        :href="product.url"
+        rel="nofollow"
+        @click="onSelectOptions"
+      >
+        {{selectOptionsText}}
+      </a>
+      <a v-else class="fs-product-button-atc-bottom-inner ajax_add_to_cart">
+        <form
+          method="post"
+          action="/cart/add"
+          acceptCharset="UTF-8"
+          enctype="multipart/form-data"
+          :id="'fs-product-form-' + currentVariant.id"
+          @click="onSubmit"
+          data-testid="sr-atc-btn"
+        >
+          <input type="hidden" name="form_type" value="product" />
+          <input type="hidden" name="quantity" value="1" min="1" />
+          <input type="hidden" name="id" :value="currentVariant.id" />
+          <span class="fs-product-button__text" data-testid="sr-atc-text">{{addToCartText}}</span>
+        </form>
+      </a>
+    </template>
+    <template v-else>
+      <a
+        class="fs-product-button-atc-bottom-inner ajax_add_to_cart"
+        :href="product.url"
+        rel="nofollow"
+        @click="onReadMore"
+      >
+        {{readMoreText}}
+      </a>
+    </template>
+  </div>
 </div>
     `,
 
@@ -1435,12 +1487,12 @@ flashsearch.searchResultsTemplates = {
   <a class="fs-product-image__main-image-wrapper" :href="productUrl">
     <div
       class="fs-product-image__main-image"
-      :style="{'background-image': 'url(' + mainProductImage + ')'}"
+      :style="{'background-image': 'url(' + mainProductImage + ')', 'padding-top': (1/mainProductImageAspectRatio)*100 + '%' }"
     />
   </a>
   <div
-    v-if="secondProductImage"
-    class="fs-product-image__hover-image-wrapper"
+    v-if="secondProductImage && displayImages === 'two-images'"
+    :class="'fs-product-image__hover-image-wrapper' + (hoverEffect ? ' fs-product-image-hover-effect-' + hoverEffect : '')"
   >
     <div
       class="fs-product-image__hover-image"
@@ -1454,17 +1506,23 @@ flashsearch.searchResultsTemplates = {
 <span class="fs-label-wrapper">
   <span
     v-if="!availableForSale && enableSoldOutLabel"
-    class="fs-label fs-label--soldOut"
+    :class="'fs-label fs-label--soldOut' + ' ' + 'fs-' + shape"
     :data-testid="soldOutDataTestid"
   >
-    {{soldOutText}}
+    {{$t("general.productLabel.soldOut")}}
   </span>
   <span
-    v-else-if="onSale && enableSaleLabel"
-    class="fs-label fs-label--onSale"
+    v-if="availableForSale && isNewProduct && enableNewLabel"
+    :class="'fs-label fs-label--new' + ' ' + 'fs-' + shape"
+  >
+    {{$t("general.productLabel.new")}}
+  </span>
+  <span
+    v-if="availableForSale && onSale && enableSaleLabel"
+    :class="'fs-label fs-label--onSale' + ' ' + 'fs-' + shape"
     :data-testid="saleDataTestid"
   >
-    {{saleText}}
+    {{saleLabelType === "percentage-label" ? $t("general.productLabel.salePercentage", {salePercentage: salePercentage}) : $t("general.productLabel.sale")}}
   </span>
 </span>
     `,
@@ -1505,26 +1563,34 @@ flashsearch.searchResultsTemplates = {
   :title="showTooltip ? color: undefined"
   overlay-class-name="fs-filter-option__tooltip"
 >
-  <span @mouseover="onSelect" class="fs-product-color" :class="{'fs-product-color--selected': isSelected}">
-    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color)}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': color}">
+  <span @mouseover="onSelect" class="fs-product-color" :class="{'fs-product-color--selected': isSelected, ['fs-product-color-' + swatchStyle]: true}">
+    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': color}">
     </span>
   </span>
 </fs-tooltip>
   `,
 
   "fs-product-colors": `
-<div class="fs-product-colors" v-if="getColorOptionValues(product.options).length > 1">
+<div class="fs-product-colors" v-if="getVariantColors(product).length > 0">
   <fs-product-color
-  v-for="(color, index) in getColorOptionValues(product.options)"
+  v-for="(color, index) in getVariantColors(product)"
   :key="index"
   :color="color"
-  :product="product"
   :is-selected="isSelectedItemColor(color)"
   @on-select="onSelectItemColor(color)"
   :show-tooltip="true"
+  :imageUrl="swatchLayoutType === 'swatch-variant-image' && getVariantsByColor(product, color).length > 0 ? getVariantsByColor(product, color)[0].image.originalSrc : undefined"
+  :swatchSize="swatchSize"
+  :swatchStyle="swatchStyle"
 />
 </div>
-  `,
+    `,
+
+  "fs-product-sizes": `
+<div class="fs-product-sizes" v-if="getVariantSizes(product).length > 0">
+  <span class="fs-product-sizes__text">{{getVariantSizes(product).join(", ")}}</span>
+</div>
+    `,
 
   "fs-quick-view-item": `
 <fs-modal
@@ -1543,15 +1609,17 @@ flashsearch.searchResultsTemplates = {
       class="fs-quickview-thumbs"
     >
       <fs-product-label
-        class="fs-label--top-left fs-quickview__product-label"
+        :class="'fs-label--' + productLabelPosition + ' fs-quickview__product-label'"
         :available-for-sale="product.availableForSale"
         :on-sale="onSale"
         :enable-sold-out-label="enableSoldOutLabel"
         :enable-sale-label="enableSaleLabel"
         sold-out-data-testid="sr-qv-product-label-sold-out"
         sale-data-testid="sr-qv-product-label-sale"
-        :sold-out-text='$t("searchResults.quickView.soldOutLabel")'
-        :sale-text='$t("searchResults.quickView.saleLabel")'
+        :product="product"
+        :current-variant="currentVariant"
+        :enable-new-label="enableNewLabel"
+        :shape="productLabelShape"
       />
       <fs-carousel arrows dot-position="bottom" :ref="el => caroRef = el">
         <template #prevArrow>
@@ -1566,7 +1634,7 @@ flashsearch.searchResultsTemplates = {
           <div class="fs-quickview-thumbs-item-wrapper">
             <span
               class="fs-quickview-thumbs-item"
-              :style="{'background-image': 'url(' + fsUtils.getSizedImageUrl(image.originalSrc, '540x') + ')', 'background-repeat': 'no-repeat'}"
+              :style="{'background-image': 'url(' + fsUtils.getSizedImageUrl(image.originalSrc, '540x') + ')', 'background-repeat': 'no-repeat', 'padding-top': isAspectRatioAdaptToImage ? ((image.width/image.height) ? (1/(image.width/image.height))*100 + '%' : undefined) : undefined}"
             />
           </div>
         </div>
@@ -1705,29 +1773,35 @@ flashsearch.searchResultsTemplates = {
   :md="gridViewTabletColl"
   :sm="gridViewMobileColl"
   :xs="gridViewMobileColl"
-  class="fs-sr-item-wrapper fs-sr-grid-item-wrapper"
+  :class="'fs-sr-item-wrapper' + (borderType === 'around-grid' ? ' fs-sr-item-bordered' : '') + ' fs-sr-grid-item-wrapper'"
   data-testid="grid-view-item"
   @click="onClickItem"
 >
   <div class="fs-sr-grid-item">
     <!-- Image -->
     <div
-      class="fs-sr-item__image-wrapper fs-sr-grid-item__image-wrapper"
+      :class="'fs-sr-item__image-wrapper' + (borderType === 'around-image' ? ' fs-sr-item-image-bordered' : '') + ' fs-sr-grid-item__image-wrapper'"
     >
       <fs-product-label
-        class="fs-label--top-left fs-sr-grid-item__product-label"
+        :class="'fs-label--' + productLabelPosition + ' fs-sr-grid-item__product-label'"
         :available-for-sale="product.availableForSale"
         :on-sale="onSale"
         :enable-sold-out-label="enableSoldOutLabel"
         :enable-sale-label="enableSaleLabel"
         :sold-out-text='$t("searchResults.gridViewProductItem.soldOut")'
         :sale-text='$t("searchResults.gridViewProductItem.sale")'
+        :product="product"
+        :current-variant="currentVariant"
+        :enable-new-label="enableNewLabel"
+        :shape="productLabelShape"
       />
       <fs-product-image
         class="fs-sr-grid-item__image"
         :product-url="product.url"
         :main-product-image="mainProductImage"
         :second-product-image="secondProductImage"
+        :main-product-image-aspect-ratio="isAspectRatioAdaptToImage ? mainProductImageAspectRatio : undefined"
+        :second-product-image-aspect-ratio="isAspectRatioAdaptToImage ? secondProductImageAspectRatio : undefined"
       />
       <fs-product-buttons
         class="fs-sr-grid-item__product-buttons"
@@ -1739,6 +1813,18 @@ flashsearch.searchResultsTemplates = {
         :select-options-text='$t("searchResults.gridViewProductItem.selectOptions")'
         :add-to-cart-text='$t("searchResults.gridViewProductItem.addToCart")'
         :read-more-text='$t("searchResults.gridViewProductItem.readMore")'
+        :button-design-desktop="productButtonDesignDesktop"
+        :button-design-mobile="productButtonDesignMobile"
+      />
+      <!-- product size -->
+      <fs-product-sizes
+       v-if="productSizeEnable"
+       :product="product"
+       :show-type="productSizeShowType"
+       :size-variant-names="productSizeOptionNames"
+       :color="productSizeColor"
+       :font-size="productSizeFontSize"
+       :font-weight="productSizeFontWeight"
       />
     </div>
     <div class="fs-sr-grid-item__info">
@@ -1783,7 +1869,15 @@ flashsearch.searchResultsTemplates = {
         data-testid-prefix="sr"
       />
       <!-- product color -->
-      <fs-product-colors :product="product"/>
+      <fs-product-colors
+       v-if="productColorEnable"
+       :product="product"
+       :show-type="productColorShowType"
+       :swatch-layout-type="productColorSwatchLayoutType"
+       :swatch-size="productColorSwatchSize"
+       :swatch-style="productColorSwatchStyle"
+       :color-variant-names="productColorOptionNames"
+      />
     </div>
   </div>
 </fs-col>
@@ -1796,7 +1890,7 @@ flashsearch.searchResultsTemplates = {
   :md="24"
   :sm="24"
   :xs="24"
-  class="fs-sr-item-wrapper fs-sr-list-item-wrapper"
+  :class="'fs-sr-item-wrapper' + (borderType === 'around-grid' ? ' fs-sr-item-bordered' : '') + ' fs-sr-list-item-wrapper'"
   data-testid="list-view-item"
   @click="onClickItem"
 >
@@ -1806,21 +1900,28 @@ flashsearch.searchResultsTemplates = {
         <!-- Image -->
         <div
           class="fs-sr-item__image-wrapper fs-sr-list-item__image-wrapper"
+          :class="'fs-sr-item__image-wrapper' + (borderType === 'around-image' ? ' fs-sr-item-image-bordered' : '') + ' fs-sr-list-item__image-wrapper'"
         >
           <fs-product-label
-            class="fs-label--top-left fs-sr-list-item__product-label"
+            :class="'fs-label--' + productLabelPosition + ' fs-sr-list-item__product-label'"
             :available-for-sale="product.availableForSale"
             :on-sale="onSale"
             :enable-sold-out-label="enableSoldOutLabel"
             :enable-sale-label="enableSaleLabel"
             :sold-out-text='$t("searchResults.listViewProductItem.soldOut")'
             :sale-text='$t("searchResults.listViewProductItem.sale")'
+            :product="product"
+            :current-variant="currentVariant"
+            :enable-new-label="enableNewLabel"
+            :shape="productLabelShape"
           />
           <fs-product-image
             class="fs-sr-list-item__image"
             :product-url="product.url"
             :main-product-image="mainProductImage"
             :second-product-image="secondProductImage"
+            :main-product-image-aspect-ratio="isAspectRatioAdaptToImage ? mainProductImageAspectRatio : undefined"
+            :second-product-image-aspect-ratio="isAspectRatioAdaptToImage ? secondProductImageAspectRatio : undefined"
           />
           <fs-product-buttons
             class="fs-sr-list-item__product-buttons"
@@ -1832,6 +1933,18 @@ flashsearch.searchResultsTemplates = {
             :select-options-text='$t("searchResults.listViewProductItem.selectOptions")'
             :add-to-cart-text='$t("searchResults.listViewProductItem.addToCart")'
             :read-more-text='$t("searchResults.listViewProductItem.readMore")'
+            :button-design-desktop="productButtonDesignDesktop"
+            :button-design-mobile="productButtonDesignMobile"
+          />
+          <!-- product size -->
+          <fs-product-sizes
+           v-if="productSizeEnable"
+           :product="product"
+           :show-type="productSizeShowType"
+           :size-variant-names="productSizeOptionNames"
+           :color="productSizeColor"
+           :font-size="productSizeFontSize"
+           :font-weight="productSizeFontWeight"
           />
         </div>
       </fs-col>
@@ -1885,7 +1998,15 @@ flashsearch.searchResultsTemplates = {
             :description="product.description"
           />
           <!-- product color -->
-          <fs-product-colors :product="product"/>
+          <fs-product-colors
+            v-if="productColorEnable"
+            :product="product"
+            :show-type="productColorShowType"
+            :swatch-layout-type="productColorSwatchLayoutType"
+            :swatch-size="productColorSwatchSize"
+            :swatch-style="productColorSwatchStyle"
+            :color-variant-names="productColorOptionNames"
+         />
         </div>
       </fs-col>
     </fs-row>
@@ -1985,71 +2106,81 @@ flashsearch.searchResultsTemplates = {
 <div v-if="enable" class="fs-sr-views">
   <div class="fs-sr-views-screen fs-sr-views-screen--desktop">
     <span
+      v-if="enableListView"
       @click.prevent="onSelectListView"
       class="fs-sr-view-item fs-sr-view-list"
       :class="{'fs-sr-view-item--active': isListView}"
     ></span>
-    <span
-      @click.prevent="onSelectGridView2"
-      class="fs-sr-view-item fs-sr-view-grid-2"
-      :class="{'fs-sr-view-item--active': isGridView2}"
-    ></span>
-    <span
-      @click.prevent="onSelectGridView3"
-      class="fs-sr-view-item fs-sr-view-grid-3"
-      :class="{'fs-sr-view-item--active': isGridView3}"
-    ></span>
-    <span
-      @click.prevent="onSelectGridView4"
-      class="fs-sr-view-item fs-sr-view-grid-4"
-      :class="{'fs-sr-view-item--active': isGridView4}"
-    ></span>
-    <span
-      v-if="!isVerticalLeftLayout"
-      @click.prevent="onSelectGridView6"
-      class="fs-sr-view-item fs-sr-view-grid-6"
-      :class="{'fs-sr-view-item--active': isGridView6}"
-    ></span>
+    <template v-if="enableGridView">
+      <span
+        @click.prevent="onSelectGridView2"
+        class="fs-sr-view-item fs-sr-view-grid-2"
+        :class="{'fs-sr-view-item--active': isGridView2}"
+      ></span>
+      <span
+        @click.prevent="onSelectGridView3"
+        class="fs-sr-view-item fs-sr-view-grid-3"
+        :class="{'fs-sr-view-item--active': isGridView3}"
+      ></span>
+      <span
+        @click.prevent="onSelectGridView4"
+        class="fs-sr-view-item fs-sr-view-grid-4"
+        :class="{'fs-sr-view-item--active': isGridView4}"
+      ></span>
+      <span
+        v-if="!isVerticalLeftLayout"
+        @click.prevent="onSelectGridView6"
+        class="fs-sr-view-item fs-sr-view-grid-6"
+        :class="{'fs-sr-view-item--active': isGridView6}"
+      ></span>
+    </template>
   </div>
+
   <div class="fs-sr-views-screen fs-sr-views-screen--tablet">
     <span
+      v-if="enableListView"
       @click.prevent="onSelectListView"
       class="fs-sr-view-item fs-sr-view-list"
       :class="{'fs-sr-view-item--active': isListView}"
     ></span>
-    <span
-      @click.prevent="onSelectGridView2"
-      class="fs-sr-view-item fs-sr-view-grid-2"
-      :class="{'fs-sr-view-item--active': isGridView2}"
-    ></span>
-    <span
-      @click.prevent="onSelectGridView3"
-      class="fs-sr-view-item fs-sr-view-grid-3"
-      :class="{'fs-sr-view-item--active': isGridView3}"
-    ></span>
-    <span
-      @click.prevent="onSelectGridView4"
-      class="fs-sr-view-item fs-sr-view-grid-4"
-      :class="{'fs-sr-view-item--active': isGridView4}"
-    ></span>
+    <template v-if="enableGridView">
+      <span
+        @click.prevent="onSelectGridView2"
+        class="fs-sr-view-item fs-sr-view-grid-2"
+        :class="{'fs-sr-view-item--active': isGridView2}"
+      ></span>
+      <span
+        @click.prevent="onSelectGridView3"
+        class="fs-sr-view-item fs-sr-view-grid-3"
+        :class="{'fs-sr-view-item--active': isGridView3}"
+      ></span>
+      <span
+        @click.prevent="onSelectGridView4"
+        class="fs-sr-view-item fs-sr-view-grid-4"
+        :class="{'fs-sr-view-item--active': isGridView4}"
+      ></span>
+    </template>
   </div>
 
   <div class="fs-sr-views-screen fs-sr-views-screen--mobile">
     <span
+      v-if="enableListView"
       @click.prevent="onSelectListView"
       class="fs-sr-view-item fs-sr-view-list"
       :class="{'fs-sr-view-item--active': isListView}"
     ></span>
-    <span
-      @click.prevent="onSelectGridView1"
-      class="fs-sr-view-item fs-sr-view-grid-1"
-      :class="{'fs-sr-view-item--active': isGridView1}"
-    ></span>
-    <span
-      @click.prevent="onSelectGridView2"
-      class="fs-sr-view-item fs-sr-view-grid-2"
-      :class="{'fs-sr-view-item--active': isGridView2}"
-    ></span>
+    <template v-if="enableGridView">
+      <span
+        @click.prevent="onSelectGridView1"
+        class="fs-sr-view-item fs-sr-view-grid-1"
+        :class="{'fs-sr-view-item--active': isGridView1}"
+      ></span>
+      <span
+        @click.prevent="onSelectGridView2"
+        class="fs-sr-view-item fs-sr-view-grid-2"
+        :class="{'fs-sr-view-item--active': isGridView2}"
+      ></span>
+    </template>
   </div>
 </div>
     `,
@@ -2332,8 +2463,10 @@ flashsearch.instantSearchTemplates = {
         :on-sale="onSale"
         :enable-sold-out-label="enableSoldOutLabel"
         :enable-sale-label="enableSaleLabel"
-        :sold-out-text='$t("instantSearch.soldOut")'
-        :sale-text='$t("instantSearch.sale")'
+        :product="product"
+        :current-variant="currentVariant"
+        :enable-new-label="enableNewLabel"
+        :shape="productLabelShape"
       />
       <img
         alt=""
@@ -2356,8 +2489,10 @@ flashsearch.instantSearchTemplates = {
         :on-sale="onSale"
         :enable-sold-out-label="enableSoldOutLabel"
         :enable-sale-label="enableSaleLabel"
-        :sold-out-text='$t("instantSearch.soldOut")'
-        :sale-text='$t("instantSearch.sale")'
+        :product="product"
+        :current-variant="currentVariant"
+        :enable-new-label="enableNewLabel"
+        :shape="productLabelShape"
       />
     </div>
     <!-- Review rate -->
@@ -2483,7 +2618,7 @@ flashsearch.instantSearchTemplates = {
   `,
 
   "fs-is-item": `
-<div @mousedown="onClickItem" class="fs-is-item">
+<div @click="onClickItem" class="fs-is-item">
   <slot />
 </div>
     `,
