@@ -84,6 +84,10 @@ flashsearch.searchResultsTemplates = {
     `,
 
   "fs-main": `
+<!-- Page heading -->
+<fs-collection-page-heading v-if="isCollPage"/>
+<fs-search-page-heading v-if="isSearchPage" :total-products="totalProducts" :query="query"/>
+
 <div
   class="fs-container"
 >
@@ -182,6 +186,29 @@ flashsearch.searchResultsTemplates = {
   </fs-layout>
 </div>
     `,
+  
+  "fs-collection-page-heading": `
+<div v-if="enable" class="fs-coll-page-heading">
+  <div class="fs-coll-page-heading__image" :style="{'background-image': 'url(' + imageUrl + ')'}" />
+  <div class="fs-coll-page-heading__text">
+    <h1 v-if="collTitleEnable" class="fs-coll-page-heading__coll-title">
+      {{ collection.title }}
+    </h1>
+    <div v-if="collDescEnable" class="fs-coll-page-heading__coll-desc" v-html="collection.description" />
+  </div>
+</div>
+  `,
+
+  "fs-search-page-heading": `
+<div v-if="enable" class="fs-search-page-heading">
+  <div class="fs-search-page-heading__image" :style="{'background-image': 'url(' + imageUrl + ')'}" />
+  <div class="fs-search-page-heading__text">
+    <h1 v-if="searchTextEnable" class="fs-search-page-heading__search-text">
+      {{ $t("searchPageHeading.searchResultsWithCount", {count: totalProducts, searchTerm: query}) }}
+    </h1>
+  </div>
+</div>
+  `,
 
   "fs-collection-header": `
 <div class="fs-collection-header" data-testid="sr-collection-header">
