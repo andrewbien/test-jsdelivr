@@ -90,6 +90,7 @@ flashsearch.searchResultsTemplates = {
 
 <div
   class="fs-container"
+  :class="'fs-container-' + layoutWidth"
 >
   <fs-layout>
     <!-- Header -->
@@ -211,13 +212,13 @@ flashsearch.searchResultsTemplates = {
   `,
 
   "fs-collection-header": `
-<div class="fs-collection-header" data-testid="sr-collection-header">
+<div v-if="enable" class="fs-collection-header" data-testid="sr-collection-header">
   {{header ? header : $t("searchResults.collectionPageHeader.products")}}
 </div>
   `,
 
   "fs-search-section": `
-<div class="fs-search-section">
+<div v-if="enableSearchPageHeader || enableSearchBox" class="fs-search-section">
   <!-- Skeleton: Search header -->
   <div
     v-if="isLoading && enableSearchPageHeader"
