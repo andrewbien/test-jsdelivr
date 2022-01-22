@@ -120,6 +120,7 @@ flashsearch.searchResultsTemplates = {
         :view-type="viewType"
         @collapse-filters="collapseFilters"
         @on-mobile-filters-icon-click="onMobileFiltersIconClick"
+        @on-filters-sidebar-icon-click="onFiltersSidebarIconClick"
       />
       <!-- Filters section: horizontal layout -->
       <fs-filters-section-horizontal
@@ -133,6 +134,14 @@ flashsearch.searchResultsTemplates = {
         :search-result="searchResult"
         :collapse-active-key="collapseActiveKey"
         :is-loading="isSearchLoading"
+      />
+      <!-- Filters section: filters sidebar layout-->
+      <fs-filters-section-filters-sidebar
+        v-if="isFiltersSidebarLayout && shouldShowFiltersSidebar"
+        :search-result="searchResult"
+        :visible="shouldShowFiltersSidebar"
+        @on-close="closeFiltersSidebar"
+        @show-results="showResultsOnFiltersSidebar"
       />
       <!-- Filters section: mobile layout -->
       <fs-filters-section-mobile
@@ -263,6 +272,7 @@ flashsearch.searchResultsTemplates = {
         :opened="isFilterIconOpened"
         @collapse-filters="collapseFilters"
         @on-mobile-filters-icon-click="onMobileFiltersIconClick"
+        @on-filters-sidebar-icon-click="onFiltersSidebarIconClick"
         :is-loading="isLoading"
       />
     </div>
@@ -364,12 +374,47 @@ flashsearch.searchResultsTemplates = {
 </div>
   `,
 
+  "fs-filters-section-filters-sidebar": `
+  <div
+    class="fs-filters-section"
+  >
+    <fs-drawer
+      class="fs-filters-section-filters-sidebar"
+      :class="!!layoutType ? 'fs-filters-section-filters-sidebar-' + layoutType : undefined"
+      placement="left"
+      :closable="true"
+      @close="onClose"
+      :visible="visible"
+    >
+      <template #title>
+        <span class="fs-filters-title-wrapper">
+          <span class="fs-filters-title">{{$t("searchResults.filter.filtersTitle")}}</span>
+          <fs-button-clear-all-filter-options v-if="!layoutType || layoutType === 'layout-1'" type="text" />
+        </span>
+      </template>
+      <fs-filters :filters="searchResult.filters" :show-clear-btn-at-bottom-of-options="true" />
+      <div class="fs-filters__footer">
+        <fs-button
+          class="fs-filters__show-results"
+          type="primary"
+          size="large"
+          @click.prevent="showResults"
+        >
+          {{ $t("searchResults.filter.showResults", {count: (searchResult && searchResult.total > 0 ? searchResult.total  : 0)}) }}
+        </fs-button>
+        <fs-button-clear-all-filter-options v-if="layoutType === 'layout-2'" />
+      </div>
+    </fs-drawer>
+  </div>
+    `,
+
   "fs-filters-section-mobile": `
 <div
   class="fs-filters-section"
 >
   <fs-drawer
     class="fs-filters-section-mobile"
+    :class="!!layoutType ? 'fs-filters-section-filters-sidebar-' + layoutType : undefined"
     placement="left"
     :closable="true"
     @close="closeMobileFilters"
@@ -378,7 +423,7 @@ flashsearch.searchResultsTemplates = {
     <template #title>
       <span class="fs-filters-title-wrapper">
         <span class="fs-filters-title">{{$t("searchResults.filter.filtersTitle")}}</span>
-        <fs-button-clear-all-filter-options type="text" />
+        <fs-button-clear-all-filter-options v-if="!layoutType || layoutType === 'layout-1'" type="text" />
       </span>
     </template>
     <fs-filters :filters="searchResult.filters" :isMobile="true" />
@@ -391,6 +436,7 @@ flashsearch.searchResultsTemplates = {
       >
         {{ $t("searchResults.filter.showResults", {count: (searchResult && searchResult.total > 0 ? searchResult.total  : 0)}) }}
       </fs-button>
+      <fs-button-clear-all-filter-options v-if="layoutType === 'layout-2'" />
     </div>
   </fs-drawer>
 </div>
@@ -529,7 +575,7 @@ flashsearch.searchResultsTemplates = {
             />
           </div>
         </template>
-        <fs-filter :filter="filter" :isMobile="isMobile" :show-clear-btn="isMobile" />
+        <fs-filter :filter="filter" :isMobile="isMobile" :show-clear-btn="isMobile || showClearBtnAtBottomOfOptions" />
       </fs-collapse-panel>
     </template>
   </fs-collapse>
@@ -1233,6 +1279,19 @@ flashsearch.searchResultsTemplates = {
     <span class="fs-filters-icon__label" data-testid="sr-filter-label">{{$t("searchResults.toolbars.filters")}}</span>
   </div>
   <div
+    v-if="isFiltersSidebarLayout"
+    class="fs-filters-icon fs-filters-icon--sidebar"
+    data-testid="sr-filter-icon-sidebar"
+    @click="onFiltersSidebarIconClick"
+  >
+    <div class="fs-filters-icon__icons">
+      <span class="fs-filters-icon__icon-wrapper fs-icon-slider">
+        <fs-sliders-outlined />
+      </span>
+    </div>
+    <span class="fs-filters-icon__label" data-testid="sr-filter-label-mobile">{{$t("searchResults.toolbars.filters")}}</span>
+  </div>
+  <div
     class="fs-filters-icon fs-filters-icon--mobile"
     data-testid="sr-filter-icon-mobile"
     @click="onMobileFiltersIconClick"
@@ -1588,11 +1647,11 @@ flashsearch.searchResultsTemplates = {
 
   "fs-product-color": `
 <fs-tooltip
-  :title="showTooltip ? color: undefined"
+  :title="showTooltip ? tooltipContent: undefined"
   overlay-class-name="fs-filter-option__tooltip"
 >
   <span @mouseover="onSelect" class="fs-product-color" :class="{'fs-product-color--selected': isSelected, ['fs-product-color-' + swatchStyle]: true}">
-    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': color}">
+    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : (color1 && color2) ? { background: 'linear-gradient(' + color1 + ' 50%, ' + color2 + ' 50%)' } : {'background-color': color}">
     </span>
   </span>
 </fs-tooltip>
@@ -1604,10 +1663,13 @@ flashsearch.searchResultsTemplates = {
   v-for="(color, index) in getVariantColors(product)"
   :key="index"
   :color="color"
+  :color1="getColor1(color)"
+  :color2="getColor2(color)"
   :is-selected="isSelectedItemColor(color)"
   @on-select="onSelectItemColor(color)"
   :show-tooltip="true"
-  :imageUrl="swatchLayoutType === 'swatch-variant-image' && getVariantsByColor(product, color).length > 0 ? getVariantsByColor(product, color)[0].image.originalSrc : undefined"
+  :tooltip-content="color"
+  :imageUrl="swatchLayoutType === 'swatch-variant-image' && getVariantsByColor(product, color).length > 0 ? getVariantsByColor(product, color)[0].image.originalSrc : getImageUrlByColor(color) ? getImageUrlByColor(color) : undefined"
   :swatchSize="swatchSize"
   :swatchStyle="swatchStyle"
 />
