@@ -1660,19 +1660,30 @@ flashsearch.searchResultsTemplates = {
   "fs-product-colors": `
 <div class="fs-product-colors" v-if="getVariantColors(product).length > 0">
   <fs-product-color
-  v-for="(color, index) in getVariantColors(product)"
-  :key="index"
-  :color="color"
-  :color1="getColor1(color)"
-  :color2="getColor2(color)"
-  :is-selected="isSelectedItemColor(color)"
-  @on-select="onSelectItemColor(color)"
-  :show-tooltip="true"
-  :tooltip-content="color"
-  :imageUrl="swatchLayoutType === 'swatch-variant-image' && getVariantsByColor(product, color).length > 0 ? getVariantsByColor(product, color)[0].image.originalSrc : getImageUrlByColor(color) ? getImageUrlByColor(color) : undefined"
-  :swatchSize="swatchSize"
-  :swatchStyle="swatchStyle"
-/>
+    v-for="(color, index) in variantColorsToShow"
+    :key="index"
+    :color="color"
+    :color1="getColor1(color)"
+    :color2="getColor2(color)"
+    :is-selected="isSelectedItemColor(color)"
+    @on-select="onSelectItemColor(color)"
+    :show-tooltip="true"
+    :tooltip-content="color"
+    :imageUrl="swatchLayoutType === 'swatch-variant-image' && getVariantsByColor(product, color).length > 0 ? getVariantsByColor(product, color)[0].image.originalSrc : getImageUrlByColor(color) ? getImageUrlByColor(color) : undefined"
+    :swatchSize="swatchSize"
+    :swatchStyle="swatchStyle"
+  />
+  <fs-tooltip
+    v-if="moreCount > 0 && enableShowMore"
+    :title="isShowMore ? $t('searchResults.productItem.showMoreColors', {moreCount: moreCount}) : $t('searchResults.productItem.showLessColors', {moreCount: moreCount})"
+    overlay-class-name="fs-filter-option__tooltip"
+  >
+  <span class="fs-product-color fs-product-colors__more" :class="{['fs-product-color-' + swatchStyle]: true}" @click.prevent="isShowMore ? onShowMore() : onShowLess()">
+    <span class="fs-product-color__value" :class="{['fs-product-color-' + swatchStyle]: true}">
+    {{isShowMore ? ("+" + moreCount) : ("-" + moreCount)}}
+    </span>
+  </span>
+</fs-tooltip>
 </div>
     `,
 
@@ -1681,6 +1692,22 @@ flashsearch.searchResultsTemplates = {
   <span class="fs-product-sizes__text">{{getVariantSizes(product).join(", ")}}</span>
 </div>
     `,
+  
+  "fs-wishlist": `
+<!-- Growave -->
+<div v-if="isGrowaveWishlist" :class="'ssw-faveiticon' + ' sswfaveicon' + product.id + ' fs-wishlist fs-wishlist-growave' + ' fs-wishlist-shape-' + shape">
+  <i v-bind="growave.attrs" class="ssw-icon-heart-o ssw-fave-icon ssw-wishlist-element ssw-not-synch"></i>
+  <span class="faves-count">...</span>
+</div> 
+<!-- Wishlist plus -->
+<button v-if="isWishlistPlus" :class="'swym-button swym-add-to-wishlist-view-product' + ' fs-wishlist fs-wishlist-wishlistplus' + ' fs-wishlist-shape-' + shape" data-swaction="addToWishlist"  :data-product-id="product.id"></button>
+<!-- Wishlist Hero -->
+<div v-if="isWishlistHero" :class="'fs-wishlisthero-wrapper' + ' fs-wishlist-shape-' + shape" v-bind="wishlistHero.attrs"></div>
+<!-- Wishlist King -->
+<div v-if="isWishlistKing" :class="'fs-wishlistking-wrapper' + ' fs-wishlist-shape-' + shape" v-html="wishlistKing.collectionButtonHtml"></div>
+<!-- Smart wishlist -->
+<span v-if="isSmartWishlist" :class="'smartwishlist' + ' fs-wishlist fs-wishlist-smartwishlist' + ' fs-wishlist-shape-' + shape" :data-product="product.id" :data-variant="currentVariant.id"></span>
+  `,
 
   "fs-quick-view-item": `
 <fs-modal
@@ -1793,63 +1820,61 @@ flashsearch.searchResultsTemplates = {
               </fs-select-option>
             </fs-select>
           </fs-form-item>
-          <fs-row>
-            <fs-col
-              v-if="isCurrentVariantAvailable && currentVariant.availableForSale"
-              :xl="8" :lg="8" :md="8" :sm="8" :xs="8"
-            >
-              <fs-form-item name="quantity" :label="$t('searchResults.quickView.quantity')">
-                <fs-input-number
-                  size="large"
-                  :min="1"
-                  v-model:value="formState.quantity"
-                  class="fs-quickview__quantity"
-                />
-              </fs-form-item>
-            </fs-col>
-            <fs-col :xl="16" :lg="16" :md="16" :sm="16" :xs="16">
-              <fs-form-item>
-                <fs-button
-                  v-if="isCurrentVariantAvailable && currentVariant.availableForSale"
-                  class="fs-quickview__add-to-cart-btn"
-                  html-type="submit"
-                  size="large"
-                  :loading="qvSubmitLoading"
-                  data-testid="sr-qv-atc-btn"
-                >
-                  {{$t("searchResults.quickView.addToCart")}}
-                </fs-button>
-                <fs-button
-                  v-else-if="isCurrentVariantAvailable && !currentVariant.availableForSale"
-                  size="large"
-                  class="fs-quickview__add-to-cart-btn"
-                  :disabled="true"
-                  data-testid="sr-qv-disabled-btn"
-                >
-                  {{$t("searchResults.quickView.soldOutButton")}}
-                </fs-button>
-                <fs-button
-                  v-else
-                  size="large"
-                  class="fs-quickview__add-to-cart-btn"
-                  :disabled="true"
-                  data-testid="sr-qv-disabled-btn"
-                >
-                  {{$t("searchResults.quickView.unavailable")}}
-                </fs-button>
-              </fs-form-item>
-            </fs-col>
-          </fs-row>
+          <div class="fs-quickview__buttons">
+            <fs-form-item v-if="isCurrentVariantAvailable && currentVariant.availableForSale" name="quantity" :label="$t('searchResults.quickView.quantity')">
+              <fs-input-number
+                size="large"
+                :min="1"
+                v-model:value="formState.quantity"
+                class="fs-quickview__quantity"
+              />
+            </fs-form-item>
+            <fs-form-item>
+              <fs-button
+                v-if="isCurrentVariantAvailable && currentVariant.availableForSale"
+                class="fs-quickview__add-to-cart-btn"
+                html-type="submit"
+                size="large"
+                :loading="qvSubmitLoading"
+                data-testid="sr-qv-atc-btn"
+              >
+                {{$t("searchResults.quickView.addToCart")}}
+              </fs-button>
+              <fs-button
+                v-else-if="isCurrentVariantAvailable && !currentVariant.availableForSale"
+                size="large"
+                class="fs-quickview__add-to-cart-btn"
+                :disabled="true"
+                data-testid="sr-qv-disabled-btn"
+              >
+                {{$t("searchResults.quickView.soldOutButton")}}
+              </fs-button>
+              <fs-button
+                v-else
+                size="large"
+                class="fs-quickview__add-to-cart-btn"
+                :disabled="true"
+                data-testid="sr-qv-disabled-btn"
+              >
+                {{$t("searchResults.quickView.unavailable")}}
+              </fs-button>
+            </fs-form-item>
+            <fs-form-item>
+              <fs-wishlist shape="button" :product="product" :current-variant="currentVariant"/>
+            </fs-form-item>
+          </div>
         </fs-form>
-        <fs-button
-          v-else
-          size="large"
-          class="fs-quickview__add-to-cart-btn"
-          :disabled="true"
-          data-testid="sr-qv-disabled-btn"
-        >
-          {{$t("searchResults.quickView.soldOutButton")}}
-        </fs-button>
+        <div class="fs-quickview__soldout-wrapper" v-else>
+          <fs-button
+            size="large"
+            class="fs-quickview__add-to-cart-btn"
+            :disabled="true"
+            data-testid="sr-qv-disabled-btn"
+          >
+            {{$t("searchResults.quickView.soldOutButton")}}
+          </fs-button>
+          <fs-wishlist shape="button" :product="product" :current-variant="currentVariant"/>
+        </div>
       </div>
     </fs-col>
   </fs-row>
@@ -1872,12 +1897,7 @@ flashsearch.searchResultsTemplates = {
     <div
       :class="'fs-sr-item__image-wrapper' + (borderType === 'around-image' ? ' fs-sr-item-image-bordered' : '') + ' fs-sr-grid-item__image-wrapper'"
     >
-    <div :class="'ssw-faveiticon' + ' sswfaveicon' + product.id">
-      <i :data-product-id="product.id" data-count="0"
-            class="ssw-icon-heart-o ssw-fave-icon ssw-wishlist-element ssw-not-synch" title="Hello wishlist" :data-params="growave.dataParams"></i>
-      <span class="faves-count">...</span>
-</div>
-
+      <fs-wishlist :product="product" :current-variant="currentVariant"/>
       <fs-product-label
         :class="'fs-label--' + productLabelPosition + ' fs-sr-grid-item__product-label'"
         :available-for-sale="product.availableForSale"
@@ -1973,6 +1993,9 @@ flashsearch.searchResultsTemplates = {
        :swatch-size="productColorSwatchSize"
        :swatch-style="productColorSwatchStyle"
        :color-variant-names="productColorOptionNames"
+       :enable-show-more="productColorShowMoreEnable"
+       :show-more-limit="productColorShowMoreLimit"
+       :show-more-action="productColorShowMoreAction"
       />
     </div>
   </div>
@@ -1998,6 +2021,7 @@ flashsearch.searchResultsTemplates = {
           class="fs-sr-item__image-wrapper fs-sr-list-item__image-wrapper"
           :class="'fs-sr-item__image-wrapper' + (borderType === 'around-image' ? ' fs-sr-item-image-bordered' : '') + ' fs-sr-list-item__image-wrapper'"
         >
+          <fs-wishlist :product="product" :current-variant="currentVariant"/>
           <fs-product-label
             :class="'fs-label--' + productLabelPosition + ' fs-sr-list-item__product-label'"
             :available-for-sale="product.availableForSale"
@@ -2102,6 +2126,9 @@ flashsearch.searchResultsTemplates = {
             :swatch-size="productColorSwatchSize"
             :swatch-style="productColorSwatchStyle"
             :color-variant-names="productColorOptionNames"
+            :enable-show-more="productColorShowMoreEnable"
+            :show-more-limit="productColorShowMoreLimit"
+            :show-more-action="productColorShowMoreAction"
          />
         </div>
       </fs-col>
