@@ -2818,15 +2818,15 @@ Examples:
     <img>{{getImageSize(product.url)}}</img>
  */
 
-flashsearch.event.on("init", function (app) {
+flashsearch.event.on("initSearchResults", function (app) {
   /*
-  You can create a component and using it on every templates.
+  You can create a component and using it on search results templates.
   Examples:
   - Create a component for "Search results" area:
       app.createComponent("fs-my-custom", {
           template: `<h2>this is my custom component</h2>`
       })
-  - Then using it on any templates:
+  - Then using it on search results templates:
       <fs-my-custom/>
   - Or event with more complex component with props:
       app.createComponent("fs-my-custom", {
@@ -2835,3 +2835,22 @@ flashsearch.event.on("init", function (app) {
       })
    */
 });
+
+flashsearch.event.on("initInstantSearch", function (app) {
+  /*
+  You can create a component and using it on Instant search templates.
+  Examples:
+  - Create a component for "Instant search" area:
+      app.createComponent("fs-my-custom", {
+          template: `<h2>this is my custom component</h2>`
+      })
+  - Then using it on Instant search templates:
+      <fs-my-custom/>
+  - Or event with more complex component with props:
+      app.createComponent("fs-my-custom", {
+          props: {msg: String},
+          template: `<h2>here is my message: {{msg}}</h2>`
+      })
+   */
+});
+
