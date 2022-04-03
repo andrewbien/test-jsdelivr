@@ -1538,22 +1538,22 @@ flashsearch.searchResultsTemplates = {
       >
         {{selectOptionsText}}
       </a>
-      <a v-else class="fs-product-button-atc-bottom-inner ajax_add_to_cart">
-        <form
-          method="post"
-          action="/cart/add"
-          acceptCharset="UTF-8"
-          enctype="multipart/form-data"
-          :id="'fs-product-form-' + currentVariant.id"
-          @click="onSubmit"
-          data-testid="sr-atc-btn"
-        >
-          <input type="hidden" name="form_type" value="product" />
-          <input type="hidden" name="quantity" value="1" min="1" />
-          <input type="hidden" name="id" :value="currentVariant.id" />
-          <span class="fs-product-button__text" data-testid="sr-atc-text">{{addToCartText}}</span>
-        </form>
-      </a>
+      <form
+        v-else
+        class="fs-product-button-atc-bottom-inner ajax_add_to_cart"
+        method="post"
+        action="/cart/add"
+        acceptCharset="UTF-8"
+        enctype="multipart/form-data"
+        :id="'fs-product-form-' + currentVariant.id"
+        @click="onSubmit"
+        data-testid="sr-atc-btn"
+      >
+        <input type="hidden" name="form_type" value="product" />
+        <input type="hidden" name="quantity" value="1" min="1" />
+        <input type="hidden" name="id" :value="currentVariant.id" />
+        <span class="fs-product-button__text" data-testid="sr-atc-text">{{addToCartText}}</span>
+      </form>
     </template>
     <template v-else>
       <a
