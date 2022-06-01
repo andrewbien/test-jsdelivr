@@ -113,6 +113,7 @@ flashsearch.searchResultsTemplates = {
     <fs-layout>
       <!-- Toolbar: sortBy, views, open filters -->
       <fs-toolbar
+        v-if="!noMatchingFound"
         class="fs-main__toolbar"
         :is-filter-icon-opened="isFilterIconOpened"
         :is-loading="isSearchLoading"
@@ -130,7 +131,7 @@ flashsearch.searchResultsTemplates = {
       />
       <!-- Filters section: horizontal style 2 layout -->
       <fs-filters-section-horizontal-style-2
-        v-if="isHorizontalStyle2Layout"
+        v-if="isHorizontalStyle2Layout && !noMatchingFound"
         :search-result="searchResult"
         :collapse-active-key="collapseActiveKey"
         :is-loading="isSearchLoading"
@@ -157,7 +158,7 @@ flashsearch.searchResultsTemplates = {
     </fs-layout>
     <fs-layout>
       <!-- Filters section: vertical layout -->
-      <fs-layout-sider v-if="isVerticalLeftLayout" :width="270">
+      <fs-layout-sider v-if="isVerticalLeftLayout && !noMatchingFound" :width="270">
         <fs-filters-section-vertical :is-loading="isSearchLoading" :searchResult="searchResult"/>
       </fs-layout-sider>
       <fs-layout-content>
@@ -1572,18 +1573,19 @@ flashsearch.searchResultsTemplates = {
   "fs-product-image": `
 <div>
   <a class="fs-product-image__main-image-wrapper" :href="productUrl">
-    <div
+    <fs-lazy-bg-img
       class="fs-product-image__main-image"
-      :style="{'background-image': 'url(' + mainProductImage + ')', 'padding-top': (1/mainProductImageAspectRatio)*100 + '%' }"
+      :style="{'padding-top': (1/mainProductImageAspectRatio)*100 + '%' }"
+      :src="mainProductImage"
     />
   </a>
   <div
     v-if="secondProductImage && displayImages === 'two-images'"
     :class="'fs-product-image__hover-image-wrapper' + (hoverEffect ? ' fs-product-image-hover-effect-' + hoverEffect : '')"
   >
-    <div
+    <fs-lazy-bg-img
       class="fs-product-image__hover-image"
-      :style="{'background-image': 'url(' + secondProductImage + ')'}"
+      :src="secondProductImage"
     />
   </div>
 </div>
@@ -1749,10 +1751,11 @@ flashsearch.searchResultsTemplates = {
         </template>
         <div v-for="(image, index) in product.images" :key="index">
           <div class="fs-quickview-thumbs-item-wrapper">
-            <span
-              class="fs-quickview-thumbs-item"
-              :style="{'background-image': 'url(' + fsUtils.getSizedImageUrl(image.originalSrc, '540x') + ')', 'background-repeat': 'no-repeat', 'padding-top': isAspectRatioAdaptToImage ? ((image.width/image.height) ? (1/(image.width/image.height))*100 + '%' : undefined) : undefined}"
-            />
+          <fs-lazy-bg-img
+            class="fs-quickview-thumbs-item"
+            :style="{'background-repeat': 'no-repeat', 'padding-top': isAspectRatioAdaptToImage ? ((image.width/image.height) ? (1/(image.width/image.height))*100 + '%' : undefined) : undefined }"
+            :src="image.originalSrc"
+          />
           </div>
         </div>
       </fs-carousel>
@@ -2605,7 +2608,7 @@ flashsearch.instantSearchTemplates = {
       <img
         alt=""
         class="fs-is-product-image"
-        :src="product.featuredImage.originalSrc"
+        :src="productImageWithSize"
       />
     </span>
   </div>
