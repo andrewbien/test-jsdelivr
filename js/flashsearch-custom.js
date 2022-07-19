@@ -1197,10 +1197,18 @@ flashsearch.searchResultsTemplates = {
     data-testid="option"
   >
     <div class="fs--filter-swatch-option__col-left">
-      <span
+      <fs-lazy-bg-img
+        v-if="!!imageUrl"
         class="fs-filter-swatch-option__image"
         :class="{'fs-filter-swatch-option--selected': isSelected, 'fs-filter-swatch-option--has-border': fsUtils.isWhiteColor(hex)}"
-        :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : {'background-color': hex}"
+        :bg="imageUrl"
+        :bg-size="100"
+      />
+      <span
+        v-else
+        class="fs-filter-swatch-option__image"
+        :class="{'fs-filter-swatch-option--selected': isSelected, 'fs-filter-swatch-option--has-border': fsUtils.isWhiteColor(hex)}"
+        :style="{'background-color': hex}"
       />
       <span
         class="fs-filter-option-value fs-filter-swatch-option__value"
@@ -1653,7 +1661,14 @@ flashsearch.searchResultsTemplates = {
   overlay-class-name="fs-filter-option__tooltip"
 >
   <span @mouseover="onSelect" class="fs-product-color" :class="{'fs-product-color--selected': isSelected, ['fs-product-color-' + swatchStyle]: true}">
-    <span class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}" :style="imageUrl ? {'background-image': 'url(' + imageUrl + ')'} : (color1 && color2) ? { background: 'linear-gradient(' + color1 + ' 50%, ' + color2 + ' 50%)' } :  color1 ? {'background-color': color1} : {'background-color': color}">
+    <fs-lazy-bg-img
+      v-if="!!imageUrl"
+      class="fs-product-color__value"
+      :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}"
+      :bg="imageUrl"
+      :bg-size="100"
+    />
+    <span v-else class="fs-product-color__value" :class="{'fs-product-color--has-border': fsUtils.isWhiteColor(color), ['fs-product-color-' + swatchSize]: true}" :style="(color1 && color2) ? { background: 'linear-gradient(' + color1 + ' 50%, ' + color2 + ' 50%)' } :  color1 ? {'background-color': color1} : {'background-color': color}">
     </span>
   </span>
 </fs-tooltip>
@@ -2351,6 +2366,7 @@ flashsearch.searchResultsTemplates = {
     :current="current"
     @change="change"
     data-testid="sr-pa-pagination"
+    hide-on-single-page
   >
   <template v-if="paginationLayoutType === 'layout-3'" #itemRender="{ page, type, originalElement }">
       <a v-if="type === 'next'" class="fs-pagination-item-link">
